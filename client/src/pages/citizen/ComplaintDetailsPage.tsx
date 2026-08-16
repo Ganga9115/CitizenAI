@@ -1,12 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Header } from '../../components/common/Header';
-import { Footer } from '../../components/common/Footer';
 import { apiClient } from '../../services/api';
 import { Complaint } from '../../types';
 import { useNotification } from '../../contexts/NotificationContext';
-import { 
-  ArrowLeft, FileText, Sparkles, MapPin, Clock, Shield, AlertTriangle, CheckCircle2, User, Play, Pause, ThumbsUp, Users, Star 
+import {
+  BrainCircuit,
+  LayoutDashboard,
+  PlusCircle,
+  History,
+  Bell,
+  Settings,
+  Search,
+  User,
+  ArrowLeft,
+  FileText,
+  Sparkles,
+  MapPin,
+  Play,
+  Pause,
+  ThumbsUp,
+  Users,
+  Star,
+  Clock,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 export const ComplaintDetailsPage: React.FC = () => {
@@ -76,7 +93,7 @@ export const ComplaintDetailsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090d16] flex items-center justify-center text-white">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-[#6B7280] font-semibold text-xs">
         Loading complaint details...
       </div>
     );
@@ -84,9 +101,12 @@ export const ComplaintDetailsPage: React.FC = () => {
 
   if (!complaint) {
     return (
-      <div className="min-h-screen bg-[#090d16] text-white flex flex-col items-center justify-center">
-        <h2 className="text-xl font-bold mb-4">Complaint Not Found</h2>
-        <Link to="/citizen/dashboard" className="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-bold">
+      <div className="min-h-screen bg-[#F8FAFC] text-[#1F2937] flex flex-col items-center justify-center space-y-4">
+        <h2 className="text-base font-extrabold">Complaint Not Found</h2>
+        <Link
+          to="/citizen/dashboard"
+          className="px-4 py-2 rounded-xl bg-[#5E4075] text-white font-extrabold text-xs shadow-xs hover:bg-[#4C3360] transition-colors"
+        >
           Back to Dashboard
         </Link>
       </div>
@@ -94,190 +114,298 @@ export const ComplaintDetailsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090d16] text-slate-100">
-      <Header />
+    <div className="min-h-screen flex bg-[#F8FAFC] text-[#1F2937]">
+      {/* LEFT SIDEBAR - CITIZEN NAVIGATION */}
+      <aside className="w-64 bg-[#5E4075] text-white flex flex-col justify-between p-6 shrink-0 hidden md:flex">
+        <div>
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center gap-2.5 mb-10">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+              <BrainCircuit className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <span className="font-extrabold text-xl tracking-tight text-white">CivicAI</span>
+          </Link>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        
-        <Link to="/citizen/dashboard" className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-400 hover:text-indigo-300 mb-6">
-          <ArrowLeft className="w-4 h-4" /> Back to My Complaints
-        </Link>
-
-        {/* Complaint Header Card */}
-        <div className="p-6 rounded-3xl glass-panel border border-white/10 space-y-4 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <span className="font-mono text-sm font-bold text-indigo-400">{complaint.tracking_number}</span>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  complaint.priority === 'Emergency' ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-slate-800 text-slate-300'
-                }`}>
-                  {complaint.priority} Priority
-                </span>
-                <span className="text-xs text-slate-400">{complaint.category}</span>
-              </div>
-              <h1 className="text-2xl font-extrabold text-white">{complaint.summary}</h1>
-            </div>
-
-            <div className="flex flex-col items-start sm:items-end gap-2">
-              <span className={`px-4 py-1.5 rounded-xl text-xs font-extrabold inline-block ${
-                complaint.status === 'Resolved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                complaint.status === 'In Progress' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-              }`}>
-                {complaint.status}
-              </span>
-
-              {/* Endorse Button */}
-              {complaint.status !== 'Resolved' && (
-                <button
-                  onClick={handleEndorse}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 transition-all"
-                >
-                  <ThumbsUp className="w-3.5 h-3.5" /> 👍 I'm Affected ({complaint.affected_citizens_count})
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-4 border-t border-white/10 text-xs">
-            <div>
-              <span className="text-slate-400 block mb-1">Community Impact</span>
-              <strong className="text-emerald-400 text-sm flex items-center gap-1">
-                <Users className="w-4 h-4" /> {complaint.affected_citizens_count} Affected Citizens
-              </strong>
-            </div>
-            <div>
-              <span className="text-slate-400 block mb-1">Department</span>
-              <strong className="text-white text-sm">{complaint.department_name}</strong>
-            </div>
-            <div>
-              <span className="text-slate-400 block mb-1">Location</span>
-              <strong className="text-white text-sm flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-indigo-400" /> {complaint.location}
-              </strong>
-            </div>
-            <div>
-              <span className="text-slate-400 block mb-1">Est. Resolution Time</span>
-              <strong className="text-white text-sm">{complaint.estimated_resolution}</strong>
-            </div>
-          </div>
+          {/* Navigation Links */}
+          <nav className="space-y-1">
+            <Link
+              to="/citizen/dashboard"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <LayoutDashboard className="w-4 h-4" /> My Dashboard
+            </Link>
+            <Link
+              to="/citizen/raise"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <PlusCircle className="w-4 h-4" /> Raise New Complaint
+            </Link>
+            <Link
+              to="/citizen/dashboard"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/15 text-white font-semibold text-xs transition-colors"
+            >
+              <History className="w-4 h-4" /> Complaint History
+            </Link>
+            <a
+              href="#notifications"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <Bell className="w-4 h-4" /> Notifications
+            </a>
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <Settings className="w-4 h-4" /> Settings &amp; Profile
+            </Link>
+          </nav>
         </div>
 
-        {/* CITIZEN FEEDBACK & RATING MODAL (If Resolved) */}
-        {complaint.status === 'Resolved' && (
-          <div className="p-6 rounded-3xl bg-slate-900/90 border border-emerald-500/40 space-y-4 mb-8">
-            <h4 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
-              <Star className="w-4 h-4 text-amber-400 fill-amber-400" /> Rate Resolution Quality & Department Performance
-            </h4>
+        {/* User Card */}
+        <Link to="/profile" className="pt-4 border-t border-white/10 flex items-center gap-3 hover:opacity-90 transition-opacity">
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs shrink-0">
+            <User className="w-5 h-5" />
+          </div>
+          <div className="overflow-hidden">
+            <h4 className="text-xs font-bold text-white truncate">Ganga</h4>
+            <p className="text-[10px] text-white/70 truncate">Citizen Account</p>
+          </div>
+        </Link>
+      </aside>
 
-            {complaint.feedback_rating ? (
-              <div className="p-4 rounded-2xl bg-slate-950/60 text-xs space-y-1">
-                <span className="text-slate-400 block">Your Rating:</span>
-                <div className="flex items-center gap-1 text-amber-400 text-base font-bold">
-                  {'⭐'.repeat(complaint.feedback_rating)} ({complaint.feedback_rating}/5)
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        {/* TOP BAR */}
+        <header className="bg-white border-b border-[#E5E7EB] px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/citizen/dashboard"
+              className="p-2 rounded-xl border border-[#E5E7EB] text-[#6B7280] hover:text-[#1F2937] hover:bg-gray-50 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div>
+              <h1 className="text-lg font-extrabold text-[#1F2937]">Complaint Details</h1>
+              <p className="text-xs text-[#6B7280]">Ticket ID: {complaint.tracking_number}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="relative w-48 sm:w-64 hidden sm:block">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#F3F4F6] text-xs text-[#1F2937] focus:outline-none focus:ring-1 focus:ring-[#5E4075]"
+              />
+            </div>
+
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> System Live
+            </span>
+
+            <button className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:text-[#1F2937] hover:bg-gray-50 transition-colors">
+              <Bell className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+
+        {/* COMPLAINT CONTENT */}
+        <main className="p-6 max-w-7xl w-full mx-auto space-y-6">
+
+          {/* MAIN HEADER CARD */}
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#E5E7EB] pb-5">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-[#5E4075]/10 text-[#5E4075]">
+                    {complaint.tracking_number}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${
+                    complaint.priority === 'Emergency'
+                      ? 'bg-red-50 text-red-600 border border-red-200'
+                      : 'bg-[#5E4075]/10 text-[#5E4075]'
+                  }`}>
+                    {complaint.priority} Priority
+                  </span>
+                  <span className="text-xs font-semibold text-[#6B7280]">{complaint.category}</span>
                 </div>
-                {complaint.feedback_comment && (
-                  <p className="text-slate-200 italic mt-1">"{complaint.feedback_comment}"</p>
+                <h2 className="text-xl font-extrabold text-[#1F2937]">{complaint.summary}</h2>
+              </div>
+
+              <div className="flex flex-col items-start sm:items-end gap-2.5">
+                <span className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 ${
+                  complaint.status === 'Resolved'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : complaint.status === 'In Progress'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                    : 'bg-[#5E4075]/10 text-[#5E4075] border border-[#5E4075]/20'
+                }`}>
+                  {complaint.status === 'Resolved' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                  {complaint.status === 'In Progress' && <Clock className="w-3.5 h-3.5 text-amber-600" />}
+                  {complaint.status === 'Open' && <AlertCircle className="w-3.5 h-3.5 text-[#5E4075]" />}
+                  {complaint.status}
+                </span>
+
+                {complaint.status !== 'Resolved' && (
+                  <button
+                    onClick={handleEndorse}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" /> Affected ({complaint.affected_citizens_count})
+                  </button>
                 )}
               </div>
-            ) : (
-              <form onSubmit={handleFeedbackSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">Rating (1 to 5 Stars)</label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setRating(s)}
-                        className={`w-10 h-10 rounded-xl text-lg font-bold transition-all ${
-                          rating >= s ? 'bg-amber-500 text-slate-950 scale-105' : 'bg-slate-800 text-slate-500'
-                        }`}
-                      >
-                        ★
-                      </button>
-                    ))}
+            </div>
+
+            {/* METRICS GRID */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                <span className="text-[#6B7280] font-medium block mb-1">Community Impact</span>
+                <strong className="text-emerald-600 text-sm font-extrabold flex items-center gap-1">
+                  <Users className="w-4 h-4" /> {complaint.affected_citizens_count} Affected Citizens
+                </strong>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                <span className="text-[#6B7280] font-medium block mb-1">Department</span>
+                <strong className="text-[#1F2937] text-sm font-extrabold">{complaint.department_name}</strong>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                <span className="text-[#6B7280] font-medium block mb-1">Location</span>
+                <strong className="text-[#1F2937] text-sm font-extrabold flex items-center gap-1 truncate">
+                  <MapPin className="w-3.5 h-3.5 text-[#5E4075] shrink-0" /> {complaint.location}
+                </strong>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                <span className="text-[#6B7280] font-medium block mb-1">Est. Resolution Time</span>
+                <strong className="text-[#1F2937] text-sm font-extrabold">{complaint.estimated_resolution}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* CITIZEN FEEDBACK & RATING (If Resolved) */}
+          {complaint.status === 'Resolved' && (
+            <div className="bg-white rounded-2xl border border-emerald-200 p-6 space-y-4 shadow-xs">
+              <h3 className="text-sm font-extrabold text-emerald-800 flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-500" /> Resolution Quality &amp; Department Rating
+              </h3>
+
+              {complaint.feedback_rating ? (
+                <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 text-xs space-y-1">
+                  <span className="text-[#6B7280] font-medium block">Your Rating:</span>
+                  <div className="flex items-center gap-1 text-amber-500 text-base font-extrabold">
+                    {'★'.repeat(complaint.feedback_rating)}
+                    <span className="text-xs text-[#1F2937] ml-1">({complaint.feedback_rating}/5)</span>
                   </div>
+                  {complaint.feedback_comment && (
+                    <p className="text-[#1F2937] italic mt-2 text-xs">"{complaint.feedback_comment}"</p>
+                  )}
                 </div>
+              ) : (
+                <form onSubmit={handleFeedbackSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#6B7280] mb-2">Rating (1 to 5 Stars)</label>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setRating(s)}
+                          className={`w-10 h-10 rounded-xl text-sm font-extrabold transition-all ${
+                            rating >= s
+                              ? 'bg-amber-400 text-white shadow-xs scale-105'
+                              : 'bg-[#F3F4F6] text-gray-400 hover:bg-gray-200'
+                          }`}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                <div>
-                  <textarea
-                    rows={2}
-                    value={feedbackComment}
-                    onChange={(e) => setFeedbackComment(e.target.value)}
-                    placeholder="Leave feedback on department responsiveness..."
-                    className="w-full p-3 rounded-xl glass-input text-xs"
-                  />
-                </div>
+                  <div>
+                    <textarea
+                      rows={3}
+                      value={feedbackComment}
+                      onChange={(e) => setFeedbackComment(e.target.value)}
+                      placeholder="Leave feedback on department responsiveness..."
+                      className="w-full p-3 rounded-xl border border-[#E5E7EB] text-xs text-[#1F2937] focus:outline-none focus:ring-1 focus:ring-[#5E4075]"
+                    />
+                  </div>
 
+                  <button
+                    type="submit"
+                    disabled={submittingFeedback}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition-colors"
+                  >
+                    {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* AUDIO PLAYER & AI SENTIMENT GRID */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Audio Complaint Player */}
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4 shadow-xs">
+              <h3 className="text-xs font-extrabold text-[#6B7280] uppercase tracking-wider flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#5E4075]" /> Audio Complaint Call
+              </h3>
+              <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] flex items-center gap-4">
                 <button
-                  type="submit"
-                  disabled={submittingFeedback}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="w-10 h-10 rounded-xl bg-[#5E4075] hover:bg-[#4C3360] text-white flex items-center justify-center shadow-xs shrink-0 transition-colors"
                 >
-                  {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
                 </button>
-              </form>
-            )}
-          </div>
-        )}
+                <div className="flex-1 h-8 flex items-center gap-1 px-2">
+                  {[40, 70, 30, 85, 100, 45, 90, 60, 35, 75, 95, 50, 80].map((h, i) => (
+                    <div
+                      key={i}
+                      className={`w-1 rounded-full transition-all ${
+                        isPlaying ? 'bg-[#5E4075] animate-pulse' : 'bg-gray-300'
+                      }`}
+                      style={{ height: `${h * 0.6}%` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
 
-        {/* Audio Player & Verbatim Transcript */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="p-6 rounded-2xl glass-panel border border-white/10 space-y-4">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <FileText className="w-4 h-4 text-indigo-400" /> Audio Complaint Call
-            </h4>
-            <div className="p-4 rounded-xl bg-slate-950/80 border border-white/5 flex items-center gap-4">
-              <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow"
-              >
-                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-              </button>
-              <div className="flex-1 h-8 flex items-center gap-1 px-2">
-                {[40, 70, 30, 85, 100, 45, 90, 60, 35, 75, 95, 50, 80].map((h, i) => (
-                  <div
-                    key={i}
-                    className={`w-1 rounded-full ${isPlaying ? 'bg-indigo-400 animate-pulse' : 'bg-slate-700'}`}
-                    style={{ height: `${h * 0.6}%` }}
-                  ></div>
-                ))}
+            {/* AI Emotion & Sentiment */}
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4 shadow-xs">
+              <h3 className="text-xs font-extrabold text-[#6B7280] uppercase tracking-wider flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#5E4075]" /> AI Emotion &amp; Sentiment
+              </h3>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                  <span className="text-[#6B7280] font-medium block mb-1">Emotion</span>
+                  <strong className="text-[#5E4075] text-sm font-extrabold">{complaint.emotion}</strong>
+                </div>
+                <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                  <span className="text-[#6B7280] font-medium block mb-1">AI Confidence</span>
+                  <strong className="text-emerald-600 text-sm font-extrabold">{complaint.confidence}%</strong>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl glass-panel border border-white/10 space-y-4">
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-400" /> AI Emotion & Sentiment
-            </h4>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-950/60 border border-white/5">
-                <span className="text-slate-400 block mb-1">Emotion</span>
-                <strong className="text-purple-300 text-sm">{complaint.emotion}</strong>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-950/60 border border-white/5">
-                <span className="text-slate-400 block mb-1">AI Confidence</span>
-                <strong className="text-emerald-400 text-sm">{complaint.confidence}%</strong>
-              </div>
-            </div>
+          {/* VERBATIM TRANSCRIPT */}
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-3 shadow-xs">
+            <h3 className="text-xs font-extrabold text-[#6B7280] uppercase tracking-wider">
+              Speech-to-Text Verbatim Transcript
+            </h3>
+            <p className="text-[#1F2937] text-xs font-mono leading-relaxed bg-[#F8FAFC] p-4 rounded-xl border border-[#E5E7EB]">
+              "{complaint.transcript}"
+            </p>
           </div>
-        </div>
 
-        {/* Verbatim Transcript */}
-        <div className="p-6 rounded-2xl glass-panel border border-white/10 space-y-3 mb-8">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Groq Whisper Speech-to-Text Verbatim Transcript
-          </h4>
-          <p className="text-slate-200 text-sm italic font-mono leading-relaxed bg-slate-950/70 p-4 rounded-xl border border-white/5">
-            "{complaint.transcript}"
-          </p>
-        </div>
-
-      </main>
-
-      <Footer />
+        </main>
+      </div>
     </div>
   );
 };

@@ -1,235 +1,250 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Bot, Mic, Cpu, Zap, ShieldAlert, Layers, MapPin, ChevronDown, 
-  CheckCircle2, ArrowRight, Activity, Users, Clock, Radio, Headphones
-} from 'lucide-react';
+import { Play, Mic, Layers, ShieldAlert, Gauge, GitFork, LineChart } from 'lucide-react';
 import { Header } from '../../components/common/Header';
-import { Footer } from '../../components/common/Footer';
-import { LiveDemoPreview } from '../../components/landing/LiveDemoPreview';
 
 export const LandingPage: React.FC = () => {
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
-
-  const features = [
-    {
-      icon: <Mic className="w-6 h-6 text-indigo-400" />,
-      title: "Groq Whisper STT",
-      description: "Sub-second speech-to-text transcription accepting audio recordings or live phone streams in any local dialect."
-    },
-    {
-      icon: <Bot className="w-6 h-6 text-purple-400" />,
-      title: "Gemini 2.5 Flash Intelligence",
-      description: "Extracts structured category, priority, department, sentiment, citizen emotion, and suggested action in 100% valid JSON."
-    },
-    {
-      icon: <ShieldAlert className="w-6 h-6 text-red-400" />,
-      title: "Emergency Prioritization",
-      description: "Instantly flags life-threatening incidents (live cables, gas leaks, structural collapses) for high-priority dispatch."
-    },
-    {
-      icon: <Layers className="w-6 h-6 text-amber-400" />,
-      title: "Duplicate Call Prevention",
-      description: "Identifies duplicate complaints for the same geographic event to avoid redundant officer deployments."
-    },
-    {
-      icon: <MapPin className="w-6 h-6 text-emerald-400" />,
-      title: "GIS Leaflet Heatmaps",
-      description: "Visualizes civic issues on real-time city map with emergency color-coded pins and neighborhood boundaries."
-    },
-    {
-      icon: <Activity className="w-6 h-6 text-blue-400" />,
-      title: "Recharts Executive Dashboards",
-      description: "Department-wise SLA resolution tracking, officer workload distribution, and monthly trend insights."
-    }
-  ];
-
-  const faqs = [
-    {
-      q: "How does the AI process incoming citizen call audio?",
-      a: "When a citizen uploads or records a call, the audio is sent to the Groq Whisper STT engine for instant transcription. The verbatim transcript is then analyzed by Gemini 2.5 Flash API using strict prompt parameters to output a structured JSON complaint payload."
-    },
-    {
-      q: "What happens during an emergency complaint?",
-      a: "The AI system evaluates distress level, sentiment, and urgency keywords. If categorized as an Emergency (e.g., live high-voltage wire or flooding), the complaint automatically triggers immediate alert banners on the Officer Triage Dashboard."
-    },
-    {
-      q: "How does duplicate complaint detection work?",
-      a: "The platform compares incoming complaint locations, categories, and keyword embeddings against active open tickets. If similarity crosses threshold, it flags duplicate probability and links them together."
-    },
-    {
-      q: "Can this system run without live API keys?",
-      a: "Yes! The system includes an intelligent built-in fallback simulation engine so judges, reviewers, and hackathon teams can test all features out-of-the-box."
-    }
-  ];
-
   return (
-    <div className="min-h-screen flex flex-col bg-[#090d16] text-slate-100 selection:bg-indigo-500">
+    <div className="min-h-screen flex flex-col bg-[#F3F4F6] text-[#1F2937] font-sans selection:bg-[#E1D2FF]">
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20">
-        
+      <main className="flex-1 w-full">
         {/* HERO SECTION */}
-        <section className="relative text-center py-16 sm:py-24 overflow-hidden">
-          
-          {/* Animated Background Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-indigo-600/20 via-purple-600/20 to-emerald-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-indigo-500/30 text-indigo-300 text-xs sm:text-sm font-semibold mb-8 shadow-xl"
-          >
-            <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-            Hackathon MVP • AI Citizen Call Intelligence Platform
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.15]"
-          >
-            Transform Citizen Voice Calls into <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400">Actionable Intelligence</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-6 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed"
-          >
-            Automated Speech-to-Text via <strong className="text-white">Groq Whisper</strong> + Deep Extraction via <strong className="text-white">Gemini 2.5 Flash</strong>. Categorizing complaints, prioritizing emergencies, and detecting duplicates instantly.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <Link
-              to="/citizen/raise"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-base shadow-2xl shadow-indigo-500/30 flex items-center justify-center gap-3 group transition-all"
+        <section className="relative pt-16 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#E1D2FF]/40 via-[#F3F4F6] to-[#F3F4F6] text-center overflow-hidden">
+          <div className="max-w-4xl mx-auto flex flex-col items-center">
+            {/* Eyebrow Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-xs font-semibold text-[#5E4075] border border-[#E5E7EB] shadow-sm mb-6"
             >
-              <Headphones className="w-5 h-5 text-indigo-200 group-hover:scale-110 transition-transform" />
-              Raise Complaint Now
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+              <span className="w-2 h-2 rounded-full bg-[#5E4075]" />
+              Next-Gen Government Tech
+            </motion.div>
 
-            <Link
-              to="/login"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl glass-panel hover:bg-slate-800/80 text-slate-200 font-semibold text-base border border-white/15 flex items-center justify-center gap-2 transition-colors"
+            {/* Main Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-4xl sm:text-6xl font-extrabold tracking-tight text-[#1F2937] leading-tight max-w-3xl"
             >
-              Officer / Admin Login
-            </Link>
-          </motion.div>
+              AI-Powered Citizen Call Intelligence
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-6 text-[#6B7280] text-base sm:text-lg max-w-2xl leading-relaxed"
+            >
+              Transform voice recordings and citizen complaints into real-time structured data. Identify priorities, automatically categorize departments, and resolve issues 40% faster.
+            </motion.p>
+
+            {/* Action Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto"
+            >
+              <Link
+                to="/citizen/raise"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-lg bg-[#5E4075] hover:bg-[#4a325d] text-white font-medium shadow-sm transition-all text-center"
+              >
+                Get Started Free
+              </Link>
+
+              <Link
+                to="/demo"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-lg bg-white hover:bg-gray-50 text-[#1F2937] font-medium border border-[#E5E7EB] shadow-sm flex items-center justify-center gap-2 transition-all"
+              >
+                <Play className="w-4 h-4 fill-current text-[#5E4075]" />
+                Watch Live Demo
+              </Link>
+            </motion.div>
+          </div>
         </section>
 
-        {/* INTERACTIVE DEMO PREVIEW */}
-        <LiveDemoPreview />
+        {/* METRICS / STATS BAR */}
+        <section className="bg-white border-y border-[#E5E7EB] py-10 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#1F2937]">50K+</div>
+              <div className="text-xs sm:text-sm text-[#6B7280] mt-1 font-medium">Calls Analyzed</div>
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#1F2937]">98%</div>
+              <div className="text-xs sm:text-sm text-[#6B7280] mt-1 font-medium">Accuracy Rate</div>
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#1F2937]">40%</div>
+              <div className="text-xs sm:text-sm text-[#6B7280] mt-1 font-medium">Faster Resolution</div>
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#1F2937]">200+</div>
+              <div className="text-xs sm:text-sm text-[#6B7280] mt-1 font-medium">Departments Integrated</div>
+            </div>
+          </div>
+        </section>
 
-        {/* FEATURES GRID */}
-        <section id="features" className="py-16">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-extrabold text-white sm:text-4xl tracking-tight">
-              Engineered for Enterprise Civic Response
-            </h2>
-            <p className="mt-4 text-slate-400 text-base">
-              Replacing manual operator call-logging with zero-friction AI intelligence.
-            </p>
+        {/* CORE CAPABILITIES SECTION */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#5E4075]">Core Capabilities</span>
+            <h2 className="text-2xl sm:text-4xl font-bold text-[#1F2937] mt-2">Built for Public Administration</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((f, i) => (
-              <div key={i} className="p-6 rounded-2xl glass-panel glass-card-hover space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center">
-                  {f.icon}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Capability 1 */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-[#E1D2FF]/50 flex items-center justify-center text-[#5E4075] mb-4">
+                  <Mic className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-white">{f.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{f.description}</p>
+                <h3 className="text-lg font-bold text-[#1F2937]">Voice Analysis</h3>
+                <p className="text-sm text-[#6B7280] mt-2 leading-relaxed">
+                  Transcribe multilingual call files instantly with government-grade precision.
+                </p>
               </div>
-            ))}
+            </div>
+
+            {/* Capability 2 */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-[#E1D2FF]/50 flex items-center justify-center text-[#5E4075] mb-4">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1F2937]">Smart Categorization</h3>
+                <p className="text-sm text-[#6B7280] mt-2 leading-relaxed">
+                  Automatically tag municipal concerns from traffic repairs to zoning violations.
+                </p>
+              </div>
+            </div>
+
+            {/* Capability 3 */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-[#E1D2FF]/50 flex items-center justify-center text-[#5E4075] mb-4">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1F2937]">Priority Detection</h3>
+                <p className="text-sm text-[#6B7280] mt-2 leading-relaxed">
+                  Real-time critical indicator classification to surface emergency incidents first.
+                </p>
+              </div>
+            </div>
+
+            {/* Capability 4 - Sentiment Analysis */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-[#E1D2FF]/50 flex items-center justify-center text-[#5E4075] mb-4">
+                  <Gauge className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1F2937]">Sentiment Analysis</h3>
+                <p className="text-sm text-[#6B7280] mt-2 leading-relaxed">
+                  Understand emotional intensity to better manage escalating citizen issues.
+                </p>
+              </div>
+            </div>
+
+            {/* Capability 5 - Department Routing */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-[#E1D2FF]/50 flex items-center justify-center text-[#5E4075] mb-4">
+                  <GitFork className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1F2937]">Department Routing</h3>
+                <p className="text-sm text-[#6B7280] mt-2 leading-relaxed">
+                  Automatically assign workflows directly to matching infrastructure groups.
+                </p>
+              </div>
+            </div>
+
+            {/* Capability 6 - Real-time Analytics */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-[#E1D2FF]/50 flex items-center justify-center text-[#5E4075] mb-4">
+                  <LineChart className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1F2937]">Real-time Analytics</h3>
+                <p className="text-sm text-[#6B7280] mt-2 leading-relaxed">
+                  Live visualization dashboard showing incoming case density and hot spots.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* HOW IT WORKS */}
-        <section id="how-it-works" className="py-16 border-t border-white/10">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-extrabold text-white sm:text-4xl tracking-tight">
-              Simple 4-Step Automated Workflow
-            </h2>
+        {/* OPERATIONS PIPELINE SECTION */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#5E4075]">Operations Pipeline</span>
+            <h2 className="text-2xl sm:text-4xl font-bold text-[#1F2937] mt-2">How CivicAI Works</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { step: "01", title: "Citizen Uploads Audio", desc: "Citizen uploads MP3/WAV file or speaks directly into browser mic." },
-              { step: "02", title: "Groq Whisper STT", desc: "Whisper transcribes raw audio into text with high accuracy." },
-              { step: "03", title: "Gemini 2.5 Flash", desc: "Extracts category, priority, department, sentiment, and JSON output." },
-              { step: "04", title: "Officer Triage", desc: "Dashboard updates instantly with map pins and emergency flags." }
-            ].map((s, idx) => (
-              <div key={idx} className="p-6 rounded-2xl glass-panel relative border border-white/10">
-                <span className="text-4xl font-extrabold text-indigo-500/40 font-mono block mb-2">{s.step}</span>
-                <h4 className="text-lg font-bold text-white mb-2">{s.title}</h4>
-                <p className="text-slate-400 text-xs leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
+            {/* Step 01 */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm">
+              <div className="text-3xl font-extrabold text-[#5E4075]/40 mb-3">01</div>
+              <h3 className="text-base font-bold text-[#1F2937]">Record</h3>
+              <p className="text-xs text-[#6B7280] mt-2 leading-relaxed">
+                Citizen uploads call recording, voicemail, or files live voice complaint.
+              </p>
+            </div>
+
+            {/* Step 02 */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm">
+              <div className="text-3xl font-extrabold text-[#5E4075]/40 mb-3">02</div>
+              <h3 className="text-base font-bold text-[#1F2937]">Transcribe</h3>
+              <p className="text-xs text-[#6B7280] mt-2 leading-relaxed">
+                AI engine translates audio to high-fidelity clean textual logs.
+              </p>
+            </div>
+
+            {/* Step 03 */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm">
+              <div className="text-3xl font-extrabold text-[#5E4075]/40 mb-3">03</div>
+              <h3 className="text-base font-bold text-[#1F2937]">Analyze</h3>
+              <p className="text-xs text-[#6B7280] mt-2 leading-relaxed">
+                Models process sentiment, identify severity, and fetch location tags.
+              </p>
+            </div>
+
+            {/* Step 04 */}
+            <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm">
+              <div className="text-3xl font-extrabold text-[#5E4075]/40 mb-3">04</div>
+              <h3 className="text-base font-bold text-[#1F2937]">Route</h3>
+              <p className="text-xs text-[#6B7280] mt-2 leading-relaxed">
+                The complaint routes instantly to the matching department pipeline.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* STATS SECTION */}
-        <section id="stats" className="py-16 my-8 rounded-3xl bg-gradient-to-r from-indigo-900/40 via-purple-900/40 to-slate-900/60 border border-indigo-500/20 p-8 sm:p-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <span className="text-3xl sm:text-5xl font-extrabold text-white font-mono">98.4%</span>
-              <p className="text-xs sm:text-sm text-indigo-300 mt-2 font-medium">Categorization Accuracy</p>
-            </div>
-            <div>
-              <span className="text-3xl sm:text-5xl font-extrabold text-white font-mono">&lt; 2.8s</span>
-              <p className="text-xs sm:text-sm text-purple-300 mt-2 font-medium">End-to-End Pipeline Speed</p>
-            </div>
-            <div>
-              <span className="text-3xl sm:text-5xl font-extrabold text-white font-mono">42%</span>
-              <p className="text-xs sm:text-sm text-emerald-300 mt-2 font-medium">Duplicate Dispatch Reduction</p>
-            </div>
-            <div>
-              <span className="text-3xl sm:text-5xl font-extrabold text-white font-mono">15+</span>
-              <p className="text-xs sm:text-sm text-amber-300 mt-2 font-medium">Civic Complaint Categories</p>
+        {/* BOTTOM CALL TO ACTION BANNER */}
+        <section className="bg-[#5E4075] text-white py-16 px-4 sm:px-6 lg:px-8 text-center">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+              Ready to Modernize Public Service?
+            </h2>
+            <p className="mt-4 text-[#E1D2FF] text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+              Get a tailored system integration audit. See how CivicAI integrates directly with standard public management pipelines.
+            </p>
+            <div className="mt-8">
+              <Link
+                to="/audit"
+                className="inline-block px-6 py-3.5 rounded-lg bg-white hover:bg-gray-100 text-[#5E4075] font-semibold text-sm shadow-md transition-all"
+              >
+                Schedule Government Audit
+              </Link>
             </div>
           </div>
         </section>
-
-        {/* FAQ ACCORDION */}
-        <section className="py-16 border-t border-white/10">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl font-extrabold text-white">Frequently Asked Questions</h2>
-          </div>
-
-          <div className="max-w-3xl mx-auto space-y-4">
-            {faqs.map((faq, index) => (
-              <div key={index} className="rounded-2xl glass-panel border border-white/10 overflow-hidden">
-                <button
-                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                  className="w-full p-5 text-left flex items-center justify-between text-white font-semibold text-base hover:bg-slate-800/40 transition-colors"
-                >
-                  <span>{faq.q}</span>
-                  <ChevronDown className={`w-5 h-5 text-indigo-400 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
-                </button>
-                {openFaq === index && (
-                  <div className="p-5 pt-0 text-slate-300 text-sm leading-relaxed border-t border-white/5 bg-slate-950/40">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
       </main>
-
-      <Footer />
     </div>
   );
 };
