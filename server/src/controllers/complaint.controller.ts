@@ -1,6 +1,12 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { ComplaintService } from '../services/complaint.service';
+
+import {
+  AuthenticatedRequest
+} from '../middleware/auth.middleware';
+
+import {
+  ComplaintService
+} from '../services/complaint.service';
 
 export class ComplaintController {
 
@@ -13,6 +19,7 @@ export class ComplaintController {
     res: Response
   ) {
     try {
+
       const {
         transcript,
         englishTranscript,
@@ -22,7 +29,11 @@ export class ComplaintController {
         longitude
       } = req.body;
 
-      if (!transcript || !category) {
+      if (
+        !transcript ||
+        !category
+      ) {
+
         return res.status(400).json({
           success: false,
           message:
@@ -32,7 +43,8 @@ export class ComplaintController {
 
       const matchResult =
         await ComplaintService.findSimilarComplaint(
-          englishTranscript || transcript,
+          englishTranscript ||
+            transcript,
           category,
           location,
           latitude,
@@ -61,14 +73,16 @@ export class ComplaintController {
   }
 
   // =========================================================
-  // I'M AFFECTED / ENDORSE
+  // I'M AFFECTED
   // =========================================================
 
   static async endorseComplaint(
     req: AuthenticatedRequest,
     res: Response
   ) {
+
     try {
+
       const { id } =
         req.params;
 
@@ -88,6 +102,7 @@ export class ComplaintController {
         );
 
       if (!updated) {
+
         return res.status(404).json({
           success: false,
           message:
@@ -99,7 +114,8 @@ export class ComplaintController {
         success: true,
         message:
           'Community endorsement added ("I\'m Affected")',
-        complaint: updated
+        complaint:
+          updated
       });
 
     } catch (err: any) {
@@ -112,7 +128,8 @@ export class ComplaintController {
       return res.status(500).json({
         success: false,
         message:
-          err.message
+          err.message ||
+          'Failed to endorse complaint'
       });
     }
   }
@@ -125,7 +142,9 @@ export class ComplaintController {
     req: AuthenticatedRequest,
     res: Response
   ) {
+
     try {
+
       const { id } =
         req.params;
 
@@ -135,10 +154,12 @@ export class ComplaintController {
       } = req.body;
 
       if (
-        typeof rating !== 'number' ||
+        typeof rating !==
+          'number' ||
         rating < 1 ||
         rating > 5
       ) {
+
         return res.status(400).json({
           success: false,
           message:
@@ -154,6 +175,7 @@ export class ComplaintController {
         );
 
       if (!updated) {
+
         return res.status(404).json({
           success: false,
           message:
@@ -165,7 +187,8 @@ export class ComplaintController {
         success: true,
         message:
           'Feedback submitted successfully. Department score updated!',
-        complaint: updated
+        complaint:
+          updated
       });
 
     } catch (err: any) {
@@ -178,7 +201,8 @@ export class ComplaintController {
       return res.status(500).json({
         success: false,
         message:
-          err.message
+          err.message ||
+          'Failed to submit feedback'
       });
     }
   }
@@ -191,7 +215,9 @@ export class ComplaintController {
     req: AuthenticatedRequest,
     res: Response
   ) {
+
     try {
+
       const {
         transcript,
         analysis,
@@ -202,7 +228,11 @@ export class ComplaintController {
         longitude
       } = req.body;
 
-      if (!transcript || !analysis) {
+      if (
+        !transcript ||
+        !analysis
+      ) {
+
         return res.status(400).json({
           success: false,
           message:
@@ -225,6 +255,7 @@ export class ComplaintController {
         latitude !== undefined &&
         latitude !== ''
       ) {
+
         const parsedLatitude =
           Number(latitude);
 
@@ -235,6 +266,7 @@ export class ComplaintController {
           parsedLatitude >= -90 &&
           parsedLatitude <= 90
         ) {
+
           validLatitude =
             parsedLatitude;
         }
@@ -245,6 +277,7 @@ export class ComplaintController {
         longitude !== undefined &&
         longitude !== ''
       ) {
+
         const parsedLongitude =
           Number(longitude);
 
@@ -255,6 +288,7 @@ export class ComplaintController {
           parsedLongitude >= -180 &&
           parsedLongitude <= 180
         ) {
+
           validLongitude =
             parsedLongitude;
         }
@@ -271,7 +305,7 @@ export class ComplaintController {
       );
 
       // =====================================================
-      // CREATE
+      // CREATE COMPLAINT
       // =====================================================
 
       const complaint =
@@ -289,7 +323,8 @@ export class ComplaintController {
             '/uploads/sample.mp3',
 
           audioDuration:
-            audioDuration || 30,
+            audioDuration ||
+            30,
 
           transcript,
 
@@ -335,7 +370,9 @@ export class ComplaintController {
     req: AuthenticatedRequest,
     res: Response
   ) {
+
     try {
+
       const {
         category,
         priority,
@@ -344,30 +381,77 @@ export class ComplaintController {
         search
       } = req.query;
 
+      // =====================================================
+      // ROLE-BASED FILTERING
+      // =====================================================
+
       let citizenId:
         string | undefined;
 
+      let officerDepartmentId:
+        string | undefined;
+
+      // Citizen
       if (
         req.user?.role ===
         'CITIZEN'
       ) {
+
         citizenId =
           req.user.userId;
       }
+
+      // Officer
+      if (
+        req.user?.role ===
+        'OFFICER'
+      ) {
+
+        officerDepartmentId =
+          req.user.departmentId ||
+          undefined;
+
+        if (
+          !officerDepartmentId
+        ) {
+
+          return res.status(403).json({
+            success: false,
+            message:
+              'Officer is not assigned to a department'
+          });
+        }
+
+        console.log(
+          '[ComplaintController] Officer department:',
+          officerDepartmentId
+        );
+      }
+
+      // =====================================================
+      // GET DATA
+      // =====================================================
 
       const complaints =
         await ComplaintService.getComplaints({
           category:
             category as string,
+
           priority:
             priority as string,
+
           department:
             department as string,
+
           status:
             status as string,
+
           search:
             search as string,
-          citizenId
+
+          citizenId,
+
+          officerDepartmentId
         });
 
       return res.json({
@@ -387,7 +471,8 @@ export class ComplaintController {
       return res.status(500).json({
         success: false,
         message:
-          err.message
+          err.message ||
+          'Failed to fetch complaints'
       });
     }
   }
@@ -400,7 +485,9 @@ export class ComplaintController {
     req: AuthenticatedRequest,
     res: Response
   ) {
+
     try {
+
       const { id } =
         req.params;
 
@@ -410,11 +497,71 @@ export class ComplaintController {
         );
 
       if (!complaint) {
+
         return res.status(404).json({
           success: false,
           message:
             'Complaint not found'
         });
+      }
+
+      // =====================================================
+      // OFFICER ACCESS CONTROL
+      // =====================================================
+
+      if (
+        req.user?.role ===
+        'OFFICER'
+      ) {
+
+        if (
+          !req.user.departmentId
+        ) {
+
+          return res.status(403).json({
+            success: false,
+            message:
+              'Officer is not assigned to a department'
+          });
+        }
+
+        if (
+          complaint.department_id !==
+          req.user.departmentId
+        ) {
+
+          return res.status(403).json({
+            success: false,
+            message:
+              'Access denied. This complaint belongs to another department.'
+          });
+        }
+      }
+
+      // =====================================================
+      // CITIZEN ACCESS CONTROL
+      // =====================================================
+
+      if (
+        req.user?.role ===
+        'CITIZEN'
+      ) {
+
+        const canView =
+          complaint.citizen_id ===
+            req.user.userId ||
+          complaint.affected_user_ids.includes(
+            req.user.userId
+          );
+
+        if (!canView) {
+
+          return res.status(403).json({
+            success: false,
+            message:
+              'Access denied. You cannot view this complaint.'
+          });
+        }
       }
 
       return res.json({
@@ -432,7 +579,8 @@ export class ComplaintController {
       return res.status(500).json({
         success: false,
         message:
-          err.message
+          err.message ||
+          'Failed to fetch complaint'
       });
     }
   }
@@ -445,7 +593,9 @@ export class ComplaintController {
     req: AuthenticatedRequest,
     res: Response
   ) {
+
     try {
+
       const { id } =
         req.params;
 
@@ -453,11 +603,59 @@ export class ComplaintController {
         req.body;
 
       if (!status) {
+
         return res.status(400).json({
           success: false,
           message:
             'Status is required'
         });
+      }
+
+      // =====================================================
+      // CHECK DEPARTMENT ACCESS
+      // =====================================================
+
+      const existing =
+        await ComplaintService.getComplaintById(
+          id
+        );
+
+      if (!existing) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            'Complaint not found'
+        });
+      }
+
+      if (
+        req.user?.role ===
+        'OFFICER'
+      ) {
+
+        if (
+          !req.user.departmentId
+        ) {
+
+          return res.status(403).json({
+            success: false,
+            message:
+              'Officer is not assigned to a department'
+          });
+        }
+
+        if (
+          existing.department_id !==
+          req.user.departmentId
+        ) {
+
+          return res.status(403).json({
+            success: false,
+            message:
+              'Access denied. This complaint belongs to another department.'
+          });
+        }
       }
 
       const updated =
@@ -469,6 +667,7 @@ export class ComplaintController {
         );
 
       if (!updated) {
+
         return res.status(404).json({
           success: false,
           message:
@@ -494,7 +693,8 @@ export class ComplaintController {
       return res.status(500).json({
         success: false,
         message:
-          err.message
+          err.message ||
+          'Failed to update complaint status'
       });
     }
   }
@@ -507,7 +707,9 @@ export class ComplaintController {
     req: AuthenticatedRequest,
     res: Response
   ) {
+
     try {
+
       const { id } =
         req.params;
 
@@ -515,6 +717,7 @@ export class ComplaintController {
         req.body;
 
       if (!note) {
+
         return res.status(400).json({
           success: false,
           message:
@@ -522,17 +725,68 @@ export class ComplaintController {
         });
       }
 
+      // =====================================================
+      // CHECK DEPARTMENT ACCESS FOR OFFICER
+      // =====================================================
+
+      const complaint =
+        await ComplaintService.getComplaintById(
+          id
+        );
+
+      if (!complaint) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            'Complaint not found'
+        });
+      }
+
+      if (
+        req.user?.role ===
+        'OFFICER'
+      ) {
+
+        if (
+          !req.user.departmentId
+        ) {
+
+          return res.status(403).json({
+            success: false,
+            message:
+              'Officer is not assigned to a department'
+          });
+        }
+
+        if (
+          complaint.department_id !==
+          req.user.departmentId
+        ) {
+
+          return res.status(403).json({
+            success: false,
+            message:
+              'Access denied. This complaint belongs to another department.'
+          });
+        }
+      }
+
       const newNote =
         await ComplaintService.addNote(
           id,
+
           req.user?.userId ||
             'usr-officer-1',
+
           req.user?.fullName ||
             'Officer',
+
           note
         );
 
       if (!newNote) {
+
         return res.status(404).json({
           success: false,
           message:
@@ -556,7 +810,8 @@ export class ComplaintController {
       return res.status(500).json({
         success: false,
         message:
-          err.message
+          err.message ||
+          'Failed to add note'
       });
     }
   }

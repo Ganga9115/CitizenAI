@@ -1,27 +1,24 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import {
-  GroqService,
-  TranscriptionResult
-} from '../services/groq.service';
+import { GroqService } from '../services/groq.service';
 import { GroqAnalysisService } from '../services/groq-analysis.service';
 
 export class AIController {
-
   /**
-   * Process citizen audio:
+   * Process uploaded citizen audio:
    *
-   * 1. Multilingual Whisper transcription
-   * 2. English translation
-   * 3. Complaint intelligence analysis
-   * 4. Priority engine
+   * 1. Groq Whisper -> original-language transcript
+   * 2. Groq Whisper translation -> English transcript
+   * 3. Groq LLM -> complaint analysis + sentiment + priority
    */
-
   static async processAudio(
     req: AuthenticatedRequest,
     res: Response
   ) {
     try {
+      // =====================================================
+      // CHECK AUDIO FILE
+      // =====================================================
 
       if (!req.file) {
         return res.status(400).json({
@@ -30,8 +27,7 @@ export class AIController {
         });
       }
 
-      const filePath =
-        req.file.path;
+      const filePath = req.file.path;
 
       console.log(
         `[AI Processing] Starting pipeline for ${req.file.originalname}`
@@ -39,11 +35,10 @@ export class AIController {
 
       // =====================================================
       // STEP 1 + 2:
-      // ORIGINAL TRANSCRIPT + ENGLISH TRANSLATION
+      // MULTILINGUAL TRANSCRIPTION + ENGLISH TRANSLATION
       // =====================================================
 
-      const transcription:
-        TranscriptionResult =
+      const transcription =
         await GroqService.transcribeAudio(
           filePath
         );
@@ -60,11 +55,7 @@ export class AIController {
 
       // =====================================================
       // STEP 3:
-      // AI COMPLAINT ANALYSIS
-      //
-      // IMPORTANT:
-      // Analyze the English meaning so classification and
-      // priority are consistent across languages.
+      // COMPLAINT ANALYSIS
       // =====================================================
 
       const analysis =
@@ -84,20 +75,22 @@ export class AIController {
         success: true,
 
         data: {
-
           // Original language transcript
           transcript:
             transcription.originalTranscript,
 
-          // English interpretation
+          // English meaning
           englishTranscript:
             transcription.englishTranscript,
 
+          // AI analysis
           analysis,
 
+          // Uploaded audio
           audioUrl:
             `/uploads/${req.file.filename}`,
 
+          // Temporary until actual duration calculation
           audioDuration: 0
         }
       });

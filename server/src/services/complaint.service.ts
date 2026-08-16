@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { AIAnalysisResult } from './groq-analysis.service';
 
@@ -52,11 +53,15 @@ export interface ComplaintRecord {
   assigned_officer_id?: string | null;
   assigned_officer_name?: string | null;
 
+  // Complaint/problem location
   location: string;
 
-  // GPS is optional because the citizen may deny permission.
+  // GPS coordinates captured during complaint submission
   latitude: number | null;
   longitude: number | null;
+
+  // Human-readable GPS location
+  gps_address?: string | null;
 
   duplicate_probability: number;
   possible_duplicate_id?: string | null;
@@ -115,6 +120,7 @@ class InMemoryStore {
       role: 'CITIZEN',
       created_at: new Date().toISOString()
     },
+
     {
       id: 'usr-officer-1',
       email: 'officer@water.gov',
@@ -126,6 +132,7 @@ class InMemoryStore {
       department_id: 'dept-water',
       created_at: new Date().toISOString()
     },
+
     {
       id: 'usr-admin-1',
       email: 'admin@city.gov',
@@ -196,46 +203,67 @@ class InMemoryStore {
       citizen_name: 'Anna Nagar Residents',
       audio_url: '/uploads/sample-water-leak.mp3',
       audio_duration: 48,
+
       transcript:
         'Emergency call! Hello, I am calling from 45 Park Avenue, Ward 12. A massive main water pipeline has burst right in front of our apartment building. The street is completely flooded and water is entering our ground floor basements.',
+
       summary:
         'Main water supply pipeline burst causing street flooding and basement water ingress at 45 Park Avenue, Ward 12.',
+
       category: 'Water Supply',
       priority: 'Emergency',
+
       department_id: 'dept-water',
       department_name: 'Water Board',
+
       sentiment: 'Highly Critical',
       emotion: 'Panic',
       confidence: 96.5,
       urgency: 'Immediate',
+
       status: 'In Progress',
+
       assigned_officer_id: 'usr-officer-1',
       assigned_officer_name: 'Officer Sarah Jenkins',
+
       location: '45 Park Avenue, Ward 12',
+
       latitude: 40.7128,
       longitude: -74.006,
+
+      gps_address: '45 Park Avenue, Ward 12',
+
       duplicate_probability: 78.5,
       possible_duplicate_id: null,
+
       suggested_action:
-        'Isolate main grid control valve #12 and dispatch Water Board Hydro Squad.',
+        'Isolate the affected water supply section and dispatch the Water Board emergency team.',
+
       keywords: [
         'water burst',
         'flooding',
         'park avenue',
         'basement'
       ],
+
       estimated_resolution: '2 to 4 hours',
+
       affected_citizens_count: 127,
       affected_user_ids: ['usr-citizen-1'],
       is_escalated: true,
+
       feedback_rating: null,
+      feedback_comment: null,
+
       created_at: new Date(
         Date.now() - 3600000 * 2
       ).toISOString(),
+
       updated_at: new Date(
         Date.now() - 3600000
       ).toISOString()
     },
+
     {
       id: 'cmp-102',
       tracking_number: 'CC-2026-8802',
@@ -243,44 +271,64 @@ class InMemoryStore {
       citizen_name: 'John Citizen',
       audio_url: '/uploads/sample-transformer.mp3',
       audio_duration: 35,
+
       transcript:
         'Hi, emergency alert! A heavy tree branch broke and fell on the main transformer wire near Sector 4 Market Road. Sparks are flying everywhere and live electrical cables are dangling on the main road.',
+
       summary:
         'Heavy tree branch fell on main transformer wire causing live dangling electrical cables and localized power outage.',
+
       category: 'Electricity',
       priority: 'Emergency',
+
       department_id: 'dept-elec',
       department_name: 'Electricity Board',
+
       sentiment: 'Highly Critical',
       emotion: 'Panic',
       confidence: 98.0,
       urgency: 'Immediate',
+
       status: 'Pending',
+
       location: 'Sector 4 Market Road Crossing',
+
       latitude: 40.7282,
       longitude: -73.9942,
+
+      gps_address: 'Sector 4 Market Road Crossing',
+
       duplicate_probability: 32.0,
       possible_duplicate_id: null,
+
       suggested_action:
-        'De-energize feeder line 4B remotely and dispatch emergency linesmen crew.',
+        'Immediately isolate the affected electrical line and dispatch an emergency electricity crew.',
+
       keywords: [
         'transformer',
         'live cable',
         'sparks',
         'power outage'
       ],
+
       estimated_resolution: '1 to 2 hours',
+
       affected_citizens_count: 48,
       affected_user_ids: ['usr-citizen-1'],
       is_escalated: true,
+
       feedback_rating: null,
+      feedback_comment: null,
+
       created_at: new Date(
         Date.now() - 3600000 * 5
       ).toISOString(),
+
       updated_at: new Date(
         Date.now() - 3600000 * 5
       ).toISOString()
     },
+
     {
       id: 'cmp-103',
       tracking_number: 'CC-2026-8803',
@@ -288,44 +336,64 @@ class InMemoryStore {
       citizen_name: 'Mary Watson',
       audio_url: '/uploads/sample-garbage.mp3',
       audio_duration: 52,
+
       transcript:
         "Hello municipal office, garbage hasn't been collected from 8th Cross Road for over 5 days. Overflowing bins are stinking up the entire street and stray animals are scattering waste everywhere.",
+
       summary:
         'Uncollected municipal garbage bins overflowing for over 5 days causing sanitation issues on 8th Cross Road.',
+
       category: 'Garbage',
       priority: 'Medium',
+
       department_id: 'dept-muni',
       department_name: 'Municipality',
+
       sentiment: 'Negative',
       emotion: 'Frustration',
       confidence: 91.0,
       urgency: 'Within 24 hours',
+
       status: 'Assigned',
+
       location: '8th Cross Road, Ward 7',
+
       latitude: 40.735,
       longitude: -74.012,
+
+      gps_address: '8th Cross Road, Ward 7',
+
       duplicate_probability: 12.0,
       possible_duplicate_id: null,
+
       suggested_action:
-        'Dispatch Municipal Compactor Truck #09 for immediate bin clearing.',
+        'Dispatch the municipal sanitation team to clear the overflowing waste.',
+
       keywords: [
         'garbage',
         'overflowing bins',
         'sanitation',
         'ward 7'
       ],
+
       estimated_resolution: '6 to 12 hours',
+
       affected_citizens_count: 14,
       affected_user_ids: ['usr-citizen-1'],
       is_escalated: false,
+
       feedback_rating: null,
+      feedback_comment: null,
+
       created_at: new Date(
         Date.now() - 3600000 * 12
       ).toISOString(),
+
       updated_at: new Date(
         Date.now() - 3600000 * 8
       ).toISOString()
     },
+
     {
       id: 'cmp-104',
       tracking_number: 'CC-2026-8804',
@@ -333,42 +401,61 @@ class InMemoryStore {
       citizen_name: 'Robert Miller',
       audio_url: '/uploads/sample-pothole.mp3',
       audio_duration: 40,
+
       transcript:
         'Deep open pothole on Main Flyover Ramp exit 2. Two motorcyclists skid and got injured this morning due to rain water hiding the hole.',
+
       summary:
         'Hazardous deep pothole on Main Flyover Ramp causing accidents during rainy conditions.',
+
       category: 'Road Damage',
       priority: 'High',
+
       department_id: 'dept-pwd',
       department_name: 'Public Works',
+
       sentiment: 'Negative',
       emotion: 'Anger',
       confidence: 89.0,
       urgency: 'Within 24 hours',
+
       status: 'Resolved',
+
       location: 'Main Flyover Ramp, Exit 2',
+
       latitude: 40.705,
       longitude: -74.018,
+
+      gps_address: 'Main Flyover Ramp, Exit 2',
+
       duplicate_probability: 45.0,
       possible_duplicate_id: null,
+
       suggested_action:
-        'Erect temporary safety cones and queue asphalt repair team.',
+        'Secure the pothole area and dispatch the road maintenance team for repair.',
+
       keywords: [
         'pothole',
         'flyover',
         'road hazard',
         'skid danger'
       ],
+
       estimated_resolution: '12 to 24 hours',
+
       affected_citizens_count: 32,
       affected_user_ids: ['usr-citizen-1'],
       is_escalated: false,
+
       feedback_rating: 5,
+
       feedback_comment:
         'Repair crew arrived within 4 hours and patched the pothole smoothly. Great service!',
+
       created_at: new Date(
         Date.now() - 3600000 * 36
       ).toISOString(),
+
       updated_at: new Date(
         Date.now() - 3600000 * 4
       ).toISOString()
@@ -381,9 +468,12 @@ class InMemoryStore {
       complaint_id: 'cmp-101',
       author_id: 'usr-officer-1',
       author_name: 'Officer Sarah Jenkins',
+
       note:
-        'Hydro team dispatched with 2 high-capacity pumps. Valve 12 isolation complete.',
+        'Hydro team dispatched with high-capacity pumps. Water supply isolation initiated.',
+
       is_internal: true,
+
       created_at: new Date(
         Date.now() - 3600000
       ).toISOString()
@@ -393,19 +483,27 @@ class InMemoryStore {
   logs: any[] = [
     {
       id: 'log-1',
-      user_name: 'Chief Admin Alex Vance',
+
+      user_name:
+        'Chief Admin Alex Vance',
+
       action: 'SYSTEM_BOOT',
+
       details: {
         status:
           'Platform operational with Community Impact Engine'
       },
+
       ip_address: '127.0.0.1',
-      created_at: new Date().toISOString()
+
+      created_at:
+        new Date().toISOString()
     }
   ];
 }
 
-export const store = new InMemoryStore();
+export const store =
+  new InMemoryStore();
 
 export class ComplaintService {
 
@@ -416,7 +514,10 @@ export class ComplaintService {
   private static toRadians(
     degrees: number
   ): number {
-    return degrees * (Math.PI / 180);
+    return (
+      degrees *
+      (Math.PI / 180)
+    );
   }
 
   private static calculateDistanceKm(
@@ -425,15 +526,19 @@ export class ComplaintService {
     lat2: number,
     lon2: number
   ): number {
-    const earthRadiusKm = 6371;
 
-    const dLat = this.toRadians(
-      lat2 - lat1
-    );
+    const earthRadiusKm =
+      6371;
 
-    const dLon = this.toRadians(
-      lon2 - lon1
-    );
+    const dLat =
+      this.toRadians(
+        lat2 - lat1
+      );
+
+    const dLon =
+      this.toRadians(
+        lon2 - lon1
+      );
 
     const a =
       Math.sin(dLat / 2) *
@@ -454,7 +559,86 @@ export class ComplaintService {
         Math.sqrt(1 - a)
       );
 
-    return earthRadiusKm * c;
+    return (
+      earthRadiusKm *
+      c
+    );
+  }
+
+  // =========================================================
+  // REVERSE GEOCODING
+  // =========================================================
+
+  private static async reverseGeocode(
+    latitude: number,
+    longitude: number
+  ): Promise<string | null> {
+
+    try {
+
+      console.log(
+        '[GPS] Converting coordinates to location:',
+        {
+          latitude,
+          longitude
+        }
+      );
+
+      const response =
+        await axios.get(
+          'https://nominatim.openstreetmap.org/reverse',
+          {
+            params: {
+              lat: latitude,
+              lon: longitude,
+              format: 'jsonv2',
+              addressdetails: 1,
+              zoom: 18,
+              'accept-language':
+                'en'
+            },
+
+            headers: {
+              'User-Agent':
+                'CivicAI-Citizen-Call-Intelligence/1.0'
+            },
+
+            timeout: 10000
+          }
+        );
+
+      const address =
+        response.data?.display_name;
+
+      if (
+        typeof address === 'string' &&
+        address.trim()
+      ) {
+
+        console.log(
+          '[GPS] Location identified:',
+          address
+        );
+
+        return address.trim();
+      }
+
+      console.warn(
+        '[GPS] Reverse geocoding returned no address.'
+      );
+
+      return null;
+
+    } catch (error: any) {
+
+      console.warn(
+        '[GPS] Reverse geocoding failed:',
+        error.response?.data ||
+          error.message
+      );
+
+      return null;
+    }
   }
 
   // =========================================================
@@ -468,15 +652,19 @@ export class ComplaintService {
     latitude?: number | null,
     longitude?: number | null
   ) {
+
     const activeComplaints =
       store.complaints.filter(
-        (c) =>
-          c.status !== 'Resolved' &&
-          c.status !== 'Rejected'
+        (complaint) =>
+          complaint.status !==
+            'Resolved' &&
+          complaint.status !==
+            'Rejected'
       );
 
     let bestMatch:
-      ComplaintRecord | null = null;
+      ComplaintRecord | null =
+      null;
 
     let maxSimilarity = 0;
 
@@ -487,46 +675,58 @@ export class ComplaintService {
       (location || '').toLowerCase();
 
     for (
-      const c of activeComplaints
+      const complaint of activeComplaints
     ) {
+
       let score = 0;
 
-      // Category
+      // Category match
       if (
-        c.category.toLowerCase() ===
+        complaint.category.toLowerCase() ===
         category.toLowerCase()
       ) {
         score += 35;
       }
 
-      // Text location
+      // Location text match
       if (
         location &&
-        c.location
+        lowerLocation !== 'not specified' &&
+        complaint.location
           .toLowerCase()
-          .includes(lowerLocation)
+          .includes(
+            lowerLocation
+          )
       ) {
         score += 40;
       }
 
-      // GPS proximity
+      // GPS proximity match
       if (
         typeof latitude === 'number' &&
         typeof longitude === 'number' &&
-        typeof c.latitude === 'number' &&
-        typeof c.longitude === 'number'
+        typeof complaint.latitude === 'number' &&
+        typeof complaint.longitude === 'number'
       ) {
+
         const distanceKm =
           this.calculateDistanceKm(
             latitude,
             longitude,
-            c.latitude,
-            c.longitude
+            complaint.latitude,
+            complaint.longitude
           );
 
-        if (distanceKm <= 0.5) {
+        if (
+          distanceKm <= 0.5
+        ) {
+
           score += 20;
-        } else if (distanceKm <= 1.5) {
+
+        } else if (
+          distanceKm <= 1.5
+        ) {
+
           score += 10;
         }
       }
@@ -536,17 +736,21 @@ export class ComplaintService {
         lowerTranscript
           .split(/\s+/)
           .filter(
-            (w) => w.length > 3
+            (word) =>
+              word.length > 3
           );
 
       let matchCount = 0;
 
-      for (const word of words) {
+      for (
+        const word of words
+      ) {
+
         if (
-          c.summary
+          complaint.summary
             .toLowerCase()
             .includes(word) ||
-          c.transcript
+          complaint.transcript
             .toLowerCase()
             .includes(word)
         ) {
@@ -554,19 +758,30 @@ export class ComplaintService {
         }
       }
 
-      if (words.length > 0) {
+      if (
+        words.length > 0
+      ) {
+
         score += Math.min(
           25,
           Math.round(
-            (matchCount / words.length) *
+            (matchCount /
+              words.length) *
               40
           )
         );
       }
 
-      if (score > maxSimilarity) {
-        maxSimilarity = score;
-        bestMatch = c;
+      if (
+        score >
+        maxSimilarity
+      ) {
+
+        maxSimilarity =
+          score;
+
+        bestMatch =
+          complaint;
       }
     }
 
@@ -574,9 +789,11 @@ export class ComplaintService {
       maxSimilarity >= 65 &&
       bestMatch
     ) {
+
       return {
         found: true,
-        similarity: maxSimilarity,
+        similarity:
+          maxSimilarity,
         similarComplaint:
           bestMatch
       };
@@ -584,8 +801,10 @@ export class ComplaintService {
 
     return {
       found: false,
-      similarity: maxSimilarity,
-      similarComplaint: null
+      similarity:
+        maxSimilarity,
+      similarComplaint:
+        null
     };
   }
 
@@ -598,11 +817,13 @@ export class ComplaintService {
     userId: string,
     userName?: string
   ) {
+
     const complaint =
       store.complaints.find(
-        (c) =>
-          c.id === complaintId ||
-          c.tracking_number ===
+        (item) =>
+          item.id ===
+            complaintId ||
+          item.tracking_number ===
             complaintId
       );
 
@@ -615,10 +836,13 @@ export class ComplaintService {
         userId
       )
     ) {
+
       complaint.affected_user_ids.push(
         userId
       );
-      complaint.affected_citizens_count += 1;
+
+      complaint.affected_citizens_count +=
+        1;
     }
 
     complaint.updated_at =
@@ -630,33 +854,52 @@ export class ComplaintService {
       complaint.priority !==
         'Emergency'
     ) {
+
       complaint.priority =
         'Emergency';
-      complaint.is_escalated = true;
+
+      complaint.is_escalated =
+        true;
+
     } else if (
       complaint.affected_citizens_count >=
         10 &&
-      complaint.priority === 'Low'
+      complaint.priority ===
+        'Low'
     ) {
-      complaint.priority = 'High';
-      complaint.is_escalated = true;
+
+      complaint.priority =
+        'High';
+
+      complaint.is_escalated =
+        true;
     }
 
     store.logs.unshift({
-      id: `log-${Date.now()}`,
+      id:
+        `log-${Date.now()}`,
+
       user_name:
-        userName || 'Citizen User',
+        userName ||
+        'Citizen User',
+
       action:
         'IM_AFFECTED_ENDORSEMENT',
+
       details: {
         complaintTracking:
           complaint.tracking_number,
+
         newAffectedCount:
           complaint.affected_citizens_count,
+
         priority:
           complaint.priority
       },
-      ip_address: '127.0.0.1',
+
+      ip_address:
+        '127.0.0.1',
+
       created_at:
         new Date().toISOString()
     });
@@ -673,11 +916,13 @@ export class ComplaintService {
     rating: number,
     comment?: string
   ) {
+
     const complaint =
       store.complaints.find(
-        (c) =>
-          c.id === complaintId ||
-          c.tracking_number ===
+        (item) =>
+          item.id ===
+            complaintId ||
+          item.tracking_number ===
             complaintId
       );
 
@@ -703,78 +948,88 @@ export class ComplaintService {
 
   static async getScoreboard():
     Promise<DepartmentScoreboardItem[]> {
-    const list: DepartmentScoreboardItem[] = [
-      {
-        rank: 1,
-        id: 'dept-elec',
-        name: 'Electricity Board',
-        code: 'ELEC',
-        citizenRating: 4.7,
-        avgResolutionHours: 2.8,
-        slaCompliancePercent: 96.2,
-        resolutionRatePercent: 94.5,
-        reopenRatePercent: 2.1,
-        overallScore: 93,
-        totalComplaints: 284,
-        resolvedComplaints: 268
-      },
-      {
-        rank: 2,
-        id: 'dept-water',
-        name: 'Water Board',
-        code: 'WATER',
-        citizenRating: 4.5,
-        avgResolutionHours: 3.5,
-        slaCompliancePercent: 91.8,
-        resolutionRatePercent: 92.0,
-        reopenRatePercent: 3.4,
-        overallScore: 89,
-        totalComplaints: 342,
-        resolvedComplaints: 315
-      },
-      {
-        rank: 3,
-        id: 'dept-pwd',
-        name: 'Public Works',
-        code: 'PWD',
-        citizenRating: 4.2,
-        avgResolutionHours: 5.2,
-        slaCompliancePercent: 86.4,
-        resolutionRatePercent: 88.0,
-        reopenRatePercent: 4.8,
-        overallScore: 84,
-        totalComplaints: 198,
-        resolvedComplaints: 174
-      },
-      {
-        rank: 4,
-        id: 'dept-muni',
-        name: 'Municipality Sanitation',
-        code: 'MUNI',
-        citizenRating: 4.0,
-        avgResolutionHours: 6.8,
-        slaCompliancePercent: 82.5,
-        resolutionRatePercent: 85.2,
-        reopenRatePercent: 5.6,
-        overallScore: 80,
-        totalComplaints: 410,
-        resolvedComplaints: 349
-      },
-      {
-        rank: 5,
-        id: 'dept-police',
-        name: 'Police Civic Wing',
-        code: 'POLICE',
-        citizenRating: 4.3,
-        avgResolutionHours: 1.5,
-        slaCompliancePercent: 94.0,
-        resolutionRatePercent: 90.1,
-        reopenRatePercent: 2.9,
-        overallScore: 88,
-        totalComplaints: 156,
-        resolvedComplaints: 141
-      }
-    ];
+
+    const list:
+      DepartmentScoreboardItem[] =
+      [
+        {
+          rank: 1,
+          id: 'dept-elec',
+          name:
+            'Electricity Board',
+          code: 'ELEC',
+          citizenRating: 4.7,
+          avgResolutionHours: 2.8,
+          slaCompliancePercent: 96.2,
+          resolutionRatePercent: 94.5,
+          reopenRatePercent: 2.1,
+          overallScore: 93,
+          totalComplaints: 284,
+          resolvedComplaints: 268
+        },
+
+        {
+          rank: 2,
+          id: 'dept-water',
+          name: 'Water Board',
+          code: 'WATER',
+          citizenRating: 4.5,
+          avgResolutionHours: 3.5,
+          slaCompliancePercent: 91.8,
+          resolutionRatePercent: 92.0,
+          reopenRatePercent: 3.4,
+          overallScore: 89,
+          totalComplaints: 342,
+          resolvedComplaints: 315
+        },
+
+        {
+          rank: 3,
+          id: 'dept-pwd',
+          name: 'Public Works',
+          code: 'PWD',
+          citizenRating: 4.2,
+          avgResolutionHours: 5.2,
+          slaCompliancePercent: 86.4,
+          resolutionRatePercent: 88.0,
+          reopenRatePercent: 4.8,
+          overallScore: 84,
+          totalComplaints: 198,
+          resolvedComplaints: 174
+        },
+
+        {
+          rank: 4,
+          id: 'dept-muni',
+          name:
+            'Municipality Sanitation',
+          code: 'MUNI',
+          citizenRating: 4.0,
+          avgResolutionHours: 6.8,
+          slaCompliancePercent: 82.5,
+          resolutionRatePercent: 85.2,
+          reopenRatePercent: 5.6,
+          overallScore: 80,
+          totalComplaints: 410,
+          resolvedComplaints: 349
+        },
+
+        {
+          rank: 5,
+          id: 'dept-police',
+          name:
+            'Police Civic Wing',
+          code: 'POLICE',
+          citizenRating: 4.3,
+          avgResolutionHours: 1.5,
+          slaCompliancePercent: 94.0,
+          resolutionRatePercent: 90.1,
+          reopenRatePercent: 2.9,
+          overallScore: 88,
+          totalComplaints: 156,
+          resolvedComplaints: 141
+        }
+      ];
 
     return list
       .sort(
@@ -785,7 +1040,8 @@ export class ComplaintService {
       .map(
         (item, index) => ({
           ...item,
-          rank: index + 1
+          rank:
+            index + 1
         })
       );
   }
@@ -798,11 +1054,17 @@ export class ComplaintService {
     data: {
       citizenId: string;
       citizenName?: string;
+
       audioUrl: string;
       audioDuration: number;
+
       transcript: string;
-      analysis: AIAnalysisResult;
+
+      analysis:
+        AIAnalysisResult;
+
       customLocation?: string;
+
       latitude?: number | null;
       longitude?: number | null;
     }
@@ -810,13 +1072,16 @@ export class ComplaintService {
 
     const trackingNumber =
       `CC-${new Date().getFullYear()}-${Math.floor(
-        1000 + Math.random() * 9000
+        1000 +
+          Math.random() *
+            9000
       )}`;
 
     const deptMatch =
       store.departments.find(
         (department) =>
-          department.name.toLowerCase() ===
+          department.name
+            .toLowerCase() ===
           data.analysis.department
             .toLowerCase()
       );
@@ -826,12 +1091,14 @@ export class ComplaintService {
     // =======================================================
 
     const lat =
-      typeof data.latitude === 'number'
+      typeof data.latitude ===
+      'number'
         ? data.latitude
         : null;
 
     const lng =
-      typeof data.longitude === 'number'
+      typeof data.longitude ===
+      'number'
         ? data.longitude
         : null;
 
@@ -843,7 +1110,58 @@ export class ComplaintService {
       }
     );
 
-    const newRecord: ComplaintRecord = {
+    // =======================================================
+    // COMPLAINT LOCATION
+    // =======================================================
+
+    let complaintLocation =
+      data.customLocation?.trim() ||
+      data.analysis.location?.trim() ||
+      '';
+
+    const locationIsMissing =
+      !complaintLocation ||
+      complaintLocation.toLowerCase() ===
+        'not specified';
+
+    let gpsAddress:
+      string | null = null;
+
+    if (
+      locationIsMissing &&
+      lat !== null &&
+      lng !== null
+    ) {
+
+      gpsAddress =
+        await this.reverseGeocode(
+          lat,
+          lng
+        );
+
+      if (gpsAddress) {
+        complaintLocation =
+          gpsAddress;
+      }
+    }
+
+    if (!complaintLocation) {
+      complaintLocation =
+        'Not specified';
+    }
+
+    console.log(
+      '[ComplaintService] Final complaint location:',
+      complaintLocation
+    );
+
+    // =======================================================
+    // NEW COMPLAINT RECORD
+    // =======================================================
+
+    const newRecord:
+      ComplaintRecord = {
+
       id:
         `cmp-${uuidv4().substring(0, 8)}`,
 
@@ -904,43 +1222,55 @@ export class ComplaintService {
         null,
 
       location:
-        data.customLocation ||
-        data.analysis.location,
+        complaintLocation,
 
-      // Real GPS. No random fallback.
-      latitude: lat,
-      longitude: lng,
+      latitude:
+        lat,
+
+      longitude:
+        lng,
+
+      gps_address:
+        gpsAddress,
 
       duplicate_probability:
-        data.analysis.duplicateProbability,
+        data.analysis
+          .duplicateProbability,
 
       possible_duplicate_id:
-        data.analysis.duplicateProbability >
+        data.analysis
+          .duplicateProbability >
         60
           ? store.complaints[0]?.id ||
             null
           : null,
 
       suggested_action:
-        data.analysis.suggestedAction,
+        data.analysis
+          .suggestedAction,
 
       keywords:
         data.analysis.keywords,
 
       estimated_resolution:
-        data.analysis.estimatedResolution,
+        data.analysis
+          .estimatedResolution,
 
-      affected_citizens_count: 1,
+      affected_citizens_count:
+        1,
 
       affected_user_ids: [
         data.citizenId
       ],
 
-      is_escalated: false,
+      is_escalated:
+        false,
 
-      feedback_rating: null,
+      feedback_rating:
+        null,
 
-      feedback_comment: null,
+      feedback_comment:
+        null,
 
       created_at:
         new Date().toISOString(),
@@ -954,23 +1284,41 @@ export class ComplaintService {
     );
 
     store.logs.unshift({
-      id: `log-${Date.now()}`,
+      id:
+        `log-${Date.now()}`,
+
       user_name:
         data.citizenName ||
         'Citizen User',
+
       action:
         'COMPLAINT_RAISED',
+
       details: {
         trackingNumber,
+
         category:
           newRecord.category,
+
         priority:
           newRecord.priority,
-        latitude: lat,
-        longitude: lng
+
+        location:
+          newRecord.location,
+
+        latitude:
+          lat,
+
+        longitude:
+          lng,
+
+        gpsAddress:
+          gpsAddress
       },
+
       ip_address:
         '127.0.0.1',
+
       created_at:
         new Date().toISOString()
     });
@@ -981,6 +1329,17 @@ export class ComplaintService {
   // =========================================================
   // GET COMPLAINTS
   // =========================================================
+  //
+  // CITIZEN:
+  //   Only own/affected complaints
+  //
+  // OFFICER:
+  //   Only complaints belonging to officer's department
+  //
+  // ADMIN:
+  //   All complaints
+  //
+  // =========================================================
 
   static async getComplaints(
     filters: {
@@ -989,56 +1348,137 @@ export class ComplaintService {
       department?: string;
       status?: string;
       search?: string;
+
+      // Citizen's user ID
       citizenId?: string;
+
+      // Officer's assigned department
+      officerDepartmentId?: string;
     }
   ) {
+
     let result =
       [...store.complaints];
 
-    if (filters.citizenId) {
+    // =======================================================
+    // CITIZEN FILTER
+    // =======================================================
+
+    if (
+      filters.citizenId
+    ) {
+
       result =
         result.filter(
-          (c) =>
-            c.citizen_id ===
+          (complaint) =>
+            complaint.citizen_id ===
               filters.citizenId ||
-            c.affected_user_ids.includes(
+            complaint.affected_user_ids.includes(
               filters.citizenId!
             )
         );
     }
 
+    // =======================================================
+    // OFFICER DEPARTMENT FILTER
+    // =======================================================
+    //
+    // THIS IS THE IMPORTANT PART.
+    //
+    // Example:
+    //
+    // Officer:
+    // departmentId = dept-water
+    //
+    // Complaint:
+    // department_id = dept-water
+    //
+    // Therefore the complaint is visible.
+    //
+    // Electricity officer:
+    // departmentId = dept-elec
+    //
+    // Water complaint:
+    // department_id = dept-water
+    //
+    // Therefore it is NOT visible.
+    //
+    // =======================================================
+
+    if (
+      filters.officerDepartmentId
+    ) {
+
+      result =
+        result.filter(
+          (complaint) =>
+            complaint.department_id ===
+            filters.officerDepartmentId
+        );
+
+      console.log(
+        '[ComplaintService] Officer department filtering:',
+        {
+          departmentId:
+            filters.officerDepartmentId,
+
+          complaintsReturned:
+            result.length
+        }
+      );
+    }
+
+    // =======================================================
+    // CATEGORY FILTER
+    // =======================================================
+
     if (
       filters.category &&
       filters.category !== 'All'
     ) {
+
       result =
         result.filter(
-          (c) =>
-            c.category.toLowerCase() ===
-            filters.category!.toLowerCase()
+          (complaint) =>
+            complaint.category
+              .toLowerCase() ===
+            filters.category!
+              .toLowerCase()
         );
     }
+
+    // =======================================================
+    // PRIORITY FILTER
+    // =======================================================
 
     if (
       filters.priority &&
       filters.priority !== 'All'
     ) {
+
       result =
         result.filter(
-          (c) =>
-            c.priority.toLowerCase() ===
-            filters.priority!.toLowerCase()
+          (complaint) =>
+            complaint.priority
+              .toLowerCase() ===
+            filters.priority!
+              .toLowerCase()
         );
     }
+
+    // =======================================================
+    // DEPARTMENT FILTER
+    // =======================================================
 
     if (
       filters.department &&
       filters.department !== 'All'
     ) {
+
       result =
         result.filter(
-          (c) =>
-            c.department_name
+          (complaint) =>
+            complaint.department_name
               .toLowerCase()
               .includes(
                 filters.department!
@@ -1047,35 +1487,53 @@ export class ComplaintService {
         );
     }
 
+    // =======================================================
+    // STATUS FILTER
+    // =======================================================
+
     if (
       filters.status &&
       filters.status !== 'All'
     ) {
+
       result =
         result.filter(
-          (c) =>
-            c.status.toLowerCase() ===
-            filters.status!.toLowerCase()
+          (complaint) =>
+            complaint.status
+              .toLowerCase() ===
+            filters.status!
+              .toLowerCase()
         );
     }
 
-    if (filters.search) {
+    // =======================================================
+    // SEARCH FILTER
+    // =======================================================
+
+    if (
+      filters.search
+    ) {
+
       const q =
-        filters.search.toLowerCase();
+        filters.search
+          .toLowerCase();
 
       result =
         result.filter(
-          (c) =>
-            c.tracking_number
+          (complaint) =>
+            complaint.tracking_number
               .toLowerCase()
               .includes(q) ||
-            c.summary
+
+            complaint.summary
               .toLowerCase()
               .includes(q) ||
-            c.location
+
+            complaint.location
               .toLowerCase()
               .includes(q) ||
-            c.transcript
+
+            complaint.transcript
               .toLowerCase()
               .includes(q)
         );
@@ -1085,17 +1543,19 @@ export class ComplaintService {
   }
 
   // =========================================================
-  // GET COMPLAINT
+  // GET COMPLAINT BY ID
   // =========================================================
 
   static async getComplaintById(
     id: string
   ) {
+
     const complaint =
       store.complaints.find(
-        (c) =>
-          c.id === id ||
-          c.tracking_number === id
+        (item) =>
+          item.id === id ||
+          item.tracking_number ===
+            id
       );
 
     if (!complaint) {
@@ -1130,11 +1590,13 @@ export class ComplaintService {
     officerId?: string,
     officerName?: string
   ) {
+
     const complaint =
       store.complaints.find(
-        (c) =>
-          c.id === id ||
-          c.tracking_number === id
+        (item) =>
+          item.id === id ||
+          item.tracking_number ===
+            id
       );
 
     if (!complaint) {
@@ -1148,6 +1610,7 @@ export class ComplaintService {
       new Date().toISOString();
 
     if (officerId) {
+
       complaint.assigned_officer_id =
         officerId;
 
@@ -1157,19 +1620,27 @@ export class ComplaintService {
     }
 
     store.logs.unshift({
-      id: `log-${Date.now()}`,
+      id:
+        `log-${Date.now()}`,
+
       user_name:
-        officerName || 'Officer',
+        officerName ||
+        'Officer',
+
       action:
         'STATUS_UPDATED',
+
       details: {
         complaintId:
           complaint.tracking_number,
+
         newStatus:
           status
       },
+
       ip_address:
         '127.0.0.1',
+
       created_at:
         new Date().toISOString()
     });
@@ -1187,11 +1658,13 @@ export class ComplaintService {
     authorName: string,
     note: string
   ) {
+
     const complaint =
       store.complaints.find(
-        (c) =>
-          c.id === complaintId ||
-          c.tracking_number ===
+        (item) =>
+          item.id ===
+            complaintId ||
+          item.tracking_number ===
             complaintId
       );
 
@@ -1199,14 +1672,26 @@ export class ComplaintService {
       return null;
     }
 
-    const newNote: NoteRecord = {
-      id: `note-${Date.now()}`,
+    const newNote:
+      NoteRecord = {
+
+      id:
+        `note-${Date.now()}`,
+
       complaint_id:
         complaint.id,
-      author_id: authorId,
-      author_name: authorName,
+
+      author_id:
+        authorId,
+
+      author_name:
+        authorName,
+
       note,
-      is_internal: true,
+
+      is_internal:
+        true,
+
       created_at:
         new Date().toISOString()
     };
@@ -1223,39 +1708,44 @@ export class ComplaintService {
   // =========================================================
 
   static async getAnalytics() {
+
     const total =
       store.complaints.length;
 
     const emergency =
       store.complaints.filter(
-        (c) =>
-          c.priority ===
+        (complaint) =>
+          complaint.priority ===
           'Emergency'
       ).length;
 
     const high =
       store.complaints.filter(
-        (c) =>
-          c.priority === 'High'
+        (complaint) =>
+          complaint.priority ===
+          'High'
       ).length;
 
     const resolved =
       store.complaints.filter(
-        (c) =>
-          c.status === 'Resolved'
+        (complaint) =>
+          complaint.status ===
+          'Resolved'
       ).length;
 
     const pending =
       store.complaints.filter(
-        (c) =>
-          c.status === 'Pending' ||
-          c.status === 'In Progress'
+        (complaint) =>
+          complaint.status ===
+            'Pending' ||
+          complaint.status ===
+            'In Progress'
       ).length;
 
     const totalAffectedCitizens =
       store.complaints.reduce(
-        (totalAffected, complaint) =>
-          totalAffected +
+        (totalCount, complaint) =>
+          totalCount +
           complaint.affected_citizens_count,
         0
       );
@@ -1266,27 +1756,30 @@ export class ComplaintService {
         value: emergency,
         color: '#ef4444'
       },
+
       {
         name: 'High',
         value: high,
         color: '#f97316'
       },
+
       {
         name: 'Medium',
         value:
           store.complaints.filter(
-            (c) =>
-              c.priority ===
+            (complaint) =>
+              complaint.priority ===
               'Medium'
           ).length,
         color: '#eab308'
       },
+
       {
         name: 'Low',
         value:
           store.complaints.filter(
-            (c) =>
-              c.priority ===
+            (complaint) =>
+              complaint.priority ===
               'Low'
           ).length,
         color: '#3b82f6'
@@ -1294,10 +1787,12 @@ export class ComplaintService {
     ];
 
     const deptMap:
-      Record<string, number> = {};
+      Record<string, number> =
+      {};
 
     store.complaints.forEach(
       (complaint) => {
+
         deptMap[
           complaint.department_name
         ] =
@@ -1310,7 +1805,9 @@ export class ComplaintService {
     );
 
     const departmentDistribution =
-      Object.keys(deptMap).map(
+      Object.keys(
+        deptMap
+      ).map(
         (department) => ({
           name: department,
           complaints:
@@ -1324,36 +1821,43 @@ export class ComplaintService {
         emergency: 12,
         total: 140
       },
+
       {
         month: 'Feb',
         emergency: 18,
         total: 165
       },
+
       {
         month: 'Mar',
         emergency: 15,
         total: 190
       },
+
       {
         month: 'Apr',
         emergency: 22,
         total: 210
       },
+
       {
         month: 'May',
         emergency: 19,
         total: 240
       },
+
       {
         month: 'Jun',
         emergency: 28,
         total: 310
       },
+
       {
         month: 'Jul',
         emergency: 34,
         total: 380
       },
+
       {
         month: 'Aug',
         emergency,
@@ -1365,21 +1869,36 @@ export class ComplaintService {
       overview: {
         totalComplaints:
           total,
+
         emergencyComplaints:
           emergency,
+
         resolvedComplaints:
           resolved,
+
         pendingComplaints:
           pending,
+
         totalAffectedCitizens,
-        avgResolutionHours: 3.4,
-        duplicateReductionPercent: 48.5
+
+        avgResolutionHours:
+          3.4,
+
+        duplicateReductionPercent:
+          48.5
       },
+
       priorityDistribution,
+
       departmentDistribution,
+
       monthlyTrends,
+
       recentComplaints:
-        store.complaints.slice(0, 5)
+        store.complaints.slice(
+          0,
+          5
+        )
     };
   }
 }
