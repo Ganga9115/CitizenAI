@@ -6,8 +6,8 @@ import { GeminiService } from '../services/gemini.service';
 export class AIController {
   /**
    * Process uploaded audio file:
-   * 1. Groq Whisper -> Transcript
-   * 2. Gemini 2.5 Flash -> Structured JSON
+   * 1. Speech-to-Text -> Transcript
+   * 2. AI Extraction -> Structured JSON
    */
   static async processAudio(req: AuthenticatedRequest, res: Response) {
     try {
@@ -18,10 +18,10 @@ export class AIController {
       const filePath = req.file.path;
       console.log(`[AI Processing] Starting pipeline for ${req.file.originalname}`);
 
-      // STEP 1: Groq Speech-to-Text
+      // STEP 1: Speech-to-Text
       const transcript = await GroqService.transcribeAudio(filePath);
 
-      // STEP 2: Gemini 2.5 Flash Extraction
+      // STEP 2: AI Extraction
       const analysis = await GeminiService.analyzeTranscript(transcript);
 
       return res.json({

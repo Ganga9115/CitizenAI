@@ -1,13 +1,27 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Header } from '../../components/common/Header';
-import { Footer } from '../../components/common/Footer';
+import { useNavigate, Link } from 'react-router-dom';
 import { AudioUploader } from '../../components/citizen/AudioUploader';
 import { AudioRecorder } from '../../components/citizen/AudioRecorder';
 import { useNotification } from '../../contexts/NotificationContext';
 import { apiClient } from '../../services/api';
-import { 
-  Upload, Mic, MapPin, Sparkles, CheckCircle2, AlertTriangle, ArrowRight, ShieldCheck, ThumbsUp, Layers, Users 
+import {
+  BrainCircuit,
+  LayoutDashboard,
+  PlusCircle,
+  History,
+  Bell,
+  Settings,
+  Search,
+  User,
+  Upload,
+  Mic,
+  MapPin,
+  Sparkles,
+  CheckCircle2,
+  ThumbsUp,
+  Layers,
+  Users,
+  MessageSquareText
 } from 'lucide-react';
 
 export const RaiseComplaintPage: React.FC = () => {
@@ -15,8 +29,10 @@ export const RaiseComplaintPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [customLocation, setCustomLocation] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [pipelineStep, setPipelineStep] = useState<number>(0);
-  
+
+  // Transcript state for right-side display
+  const [liveTranscript, setLiveTranscript] = useState<string | null>(null);
+
   // Semantic similarity state
   const [similarMatch, setSimilarMatch] = useState<any | null>(null);
   const [pendingPayload, setPendingPayload] = useState<any | null>(null);
@@ -33,7 +49,6 @@ export const RaiseComplaintPage: React.FC = () => {
     }
 
     setIsProcessing(true);
-    setPipelineStep(1); // Groq Transcribing
 
     try {
       const formData = new FormData();
@@ -43,14 +58,15 @@ export const RaiseComplaintPage: React.FC = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      setPipelineStep(2); // Gemini Analysis
-
       if (res.data.success) {
         const { transcript, analysis, audioUrl, audioDuration } = res.data.data;
         const payload = { transcript, analysis, audioUrl, audioDuration, customLocation };
+        
+        // Save transcript for display
+        setLiveTranscript(transcript);
         setPendingPayload(payload);
 
-        // STEP 3: AI Semantic Similarity Check
+        // AI Semantic Similarity Check
         const simRes = await apiClient.post('/complaints/check-similar', {
           transcript,
           category: analysis.category,
@@ -60,7 +76,6 @@ export const RaiseComplaintPage: React.FC = () => {
         if (simRes.data.success && simRes.data.found) {
           setSimilarMatch(simRes.data);
           setIsProcessing(false);
-          setPipelineStep(0);
           showToast('Similar Complaint Found!', `Match score: ${simRes.data.similarity}%`, 'info');
           return;
         }
@@ -71,13 +86,11 @@ export const RaiseComplaintPage: React.FC = () => {
     } catch (err: any) {
       showToast('AI Pipeline Error', err.response?.data?.message || 'Failed to process audio call.', 'error');
       setIsProcessing(false);
-      setPipelineStep(0);
     }
   };
 
   const finalizeCreate = async (payloadToSave = pendingPayload) => {
     setIsProcessing(true);
-    setPipelineStep(3); // Database Sync
 
     try {
       const saveRes = await apiClient.post('/complaints', payloadToSave);
@@ -106,240 +119,349 @@ export const RaiseComplaintPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090d16] text-slate-100">
-      <Header />
+    <div className="min-h-screen flex bg-[#F8FAFC] text-[#1F2937]">
+      {/* LEFT SIDEBAR - CITIZEN NAVIGATION */}
+      <aside className="w-64 bg-[#5E4075] text-white flex flex-col justify-between p-6 shrink-0 hidden md:flex">
+        <div>
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center gap-2.5 mb-10">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+              <BrainCircuit className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <span className="font-extrabold text-xl tracking-tight text-white">CivicAI</span>
+          </Link>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" /> AI Semantic Similarity + "I'm Affected" Engine
-          </div>
-          <h1 className="text-3xl font-extrabold text-white">Raise a Citizen Complaint</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Upload an audio call recording or speak directly into your mic. AI will match existing issues before creation.
-          </p>
+          {/* Navigation Links */}
+          <nav className="space-y-1">
+            <Link
+              to="/citizen/dashboard"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <LayoutDashboard className="w-4 h-4" /> My Dashboard
+            </Link>
+            <Link
+              to="/citizen/raise"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/15 text-white font-semibold text-xs transition-colors"
+            >
+              <PlusCircle className="w-4 h-4" /> Raise New Complaint
+            </Link>
+            <Link
+              to="/citizen/dashboard"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <History className="w-4 h-4" /> Complaint History
+            </Link>
+            <a
+              href="#notifications"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <Bell className="w-4 h-4" /> Notifications
+            </a>
+            <Link
+              to="/profile"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <Settings className="w-4 h-4" /> Settings &amp; Profile
+            </Link>
+          </nav>
         </div>
 
-        {/* AI SIMILAR COMPLAINT MATCH MODAL / BANNER */}
-        {similarMatch && (
-          <div className="p-6 rounded-3xl bg-slate-900/90 border-2 border-amber-500/40 shadow-2xl mb-8 space-y-6 animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                  <Layers className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-xs">
-                    ⚠️ Similar Active Issue Found ({similarMatch.similarity}% Match)
-                  </div>
-                  <h3 className="text-lg font-bold text-white mt-1">An existing complaint matches your report!</h3>
-                </div>
-              </div>
-            </div>
-
-            {/* Matched Complaint Details Card */}
-            <div className="p-5 rounded-2xl bg-slate-950/80 border border-white/10 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-mono font-bold text-indigo-400">{similarMatch.similarComplaint.tracking_number}</span>
-                <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-bold uppercase">
-                  {similarMatch.similarComplaint.priority} Priority
-                </span>
-              </div>
-
-              <h4 className="text-base font-bold text-white">{similarMatch.similarComplaint.summary}</h4>
-
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-2 border-t border-white/5">
-                <span className="flex items-center gap-1 font-bold text-emerald-400">
-                  <Users className="w-4 h-4" /> {similarMatch.similarComplaint.affected_citizens_count} Citizens Affected
-                </span>
-                <span>Location: <strong className="text-white">{similarMatch.similarComplaint.location}</strong></span>
-                <span>Status: <strong className="text-indigo-300">{similarMatch.similarComplaint.status}</strong></span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-              <button
-                type="button"
-                onClick={() => handleImAffected(similarMatch.similarComplaint.id)}
-                className="w-full sm:flex-1 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
-              >
-                <ThumbsUp className="w-4 h-4" /> 👍 I'm Affected by this issue! (Endorse)
-              </button>
-
-              <button
-                type="button"
-                onClick={() => finalizeCreate()}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-white/10"
-              >
-                Create New Independent Ticket
-              </button>
-            </div>
+        {/* User Card */}
+        <Link to="/profile" className="pt-4 border-t border-white/10 flex items-center gap-3 hover:opacity-90 transition-opacity">
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs shrink-0">
+            <User className="w-5 h-5" />
           </div>
-        )}
+          <div className="overflow-hidden">
+            <h4 className="text-xs font-bold text-white truncate">Ganga</h4>
+            <p className="text-[10px] text-white/70 truncate">Citizen Account</p>
+          </div>
+        </Link>
+      </aside>
 
-        {!resultData && !similarMatch ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <div className="lg:col-span-8 space-y-6">
-              
-              <div className="flex rounded-2xl glass-panel p-1 border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => { setActiveTab('upload'); setSelectedFile(null); }}
-                  className={`flex-1 py-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all ${
-                    activeTab === 'upload' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Upload className="w-4 h-4" /> Upload Audio File
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setActiveTab('record'); setSelectedFile(null); }}
-                  className={`flex-1 py-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all ${
-                    activeTab === 'record' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Mic className="w-4 h-4 text-emerald-400" /> Record Live Voice Call
-                </button>
-              </div>
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        {/* TOP BAR */}
+        <header className="bg-white border-b border-[#E5E7EB] px-6 py-4 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-extrabold text-[#1F2937]">Audio &amp; Transcript Intake</h1>
+            <p className="text-xs text-[#6B7280]">AI Semantic Similarity &amp; Instant Verification Engine</p>
+          </div>
 
-              {activeTab === 'upload' ? (
-                <AudioUploader
-                  onFileSelect={(file) => setSelectedFile(file)}
-                  selectedFile={selectedFile}
-                  onClear={() => setSelectedFile(null)}
-                />
-              ) : (
-                <AudioRecorder
-                  onRecorded={(file) => setSelectedFile(file)}
-                  recordedFile={selectedFile}
-                  onClear={() => setSelectedFile(null)}
-                />
-              )}
-
-              <div className="p-5 rounded-2xl glass-panel border border-white/10 space-y-3">
-                <label className="block text-xs font-semibold text-slate-300 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-indigo-400" /> Location / Ward Landmark (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={customLocation}
-                  onChange={(e) => setCustomLocation(e.target.value)}
-                  placeholder="e.g. Anna Nagar 4th Street, Ward 12"
-                  className="w-full px-4 py-2.5 rounded-xl glass-input text-sm"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleProcessAudio}
-                disabled={!selectedFile || isProcessing}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-base shadow-2xl shadow-indigo-500/25 flex items-center justify-center gap-3 transition-all disabled:opacity-50"
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    AI Similarity & Intelligence Pipeline...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 text-amber-300" /> Analyze Call & Check Similar Issues
-                  </>
-                )}
-              </button>
+          <div className="flex items-center gap-4">
+            <div className="relative w-48 sm:w-64 hidden sm:block">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search calls, tickets, insights..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#F3F4F6] text-xs text-[#1F2937] focus:outline-none focus:ring-1 focus:ring-[#5E4075]"
+              />
             </div>
 
-            <div className="lg:col-span-4 space-y-4">
-              <div className="p-6 rounded-3xl glass-panel border border-white/10 space-y-6">
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-indigo-400" /> Intelligence Workflow
-                </h4>
+            <button className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:text-[#1F2937] hover:bg-gray-50 transition-colors">
+              <Bell className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
 
-                <div className="space-y-4">
-                  {[
-                    { step: 1, label: "Groq Whisper STT", desc: "Speech-to-text audio transcription" },
-                    { step: 2, label: "Gemini 2.5 Analysis", desc: "Structured JSON & Emotion detection" },
-                    { step: 3, label: "Semantic Similarity", desc: "Checks existing issues for 'I'm Affected'" }
-                  ].map((s) => (
-                    <div key={s.step} className="flex items-start gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
-                        pipelineStep >= s.step
-                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                          : 'bg-slate-800 text-slate-500 border border-white/10'
-                      }`}>
-                        {pipelineStep > s.step ? <CheckCircle2 className="w-4 h-4" /> : s.step}
+        {/* PAGE CONTENT */}
+        <main className="p-6 max-w-7xl w-full mx-auto space-y-6">
+
+          {/* AI SIMILAR COMPLAINT MATCH BANNER */}
+          {similarMatch && (
+            <div className="bg-white rounded-2xl border border-amber-300 p-6 space-y-6 shadow-xs animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 shrink-0">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-700 font-extrabold text-[11px] border border-amber-200">
+                      ⚠️ Similar Active Issue Found ({similarMatch.similarity}% Match)
+                    </div>
+                    <h3 className="text-base font-extrabold text-[#1F2937] mt-1">An existing complaint matches your report!</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Matched Complaint Details Card */}
+              <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono font-bold text-[#5E4075]">{similarMatch.similarComplaint.tracking_number}</span>
+                  <span className="px-2 py-0.5 rounded bg-red-50 text-red-600 font-extrabold text-[10px] uppercase border border-red-200">
+                    {similarMatch.similarComplaint.priority} Priority
+                  </span>
+                </div>
+
+                <h4 className="text-sm font-extrabold text-[#1F2937]">{similarMatch.similarComplaint.summary}</h4>
+
+                <div className="flex flex-wrap items-center gap-4 text-xs text-[#6B7280] pt-2 border-t border-[#E5E7EB]">
+                  <span className="flex items-center gap-1 font-bold text-emerald-600">
+                    <Users className="w-4 h-4" /> {similarMatch.similarComplaint.affected_citizens_count} Citizens Affected
+                  </span>
+                  <span>Location: <strong className="text-[#1F2937]">{similarMatch.similarComplaint.location}</strong></span>
+                  <span>Status: <strong className="text-[#5E4075]">{similarMatch.similarComplaint.status}</strong></span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleImAffected(similarMatch.similarComplaint.id)}
+                  className="w-full sm:flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs flex items-center justify-center gap-2 transition-colors"
+                >
+                  <ThumbsUp className="w-4 h-4" /> 👍 I'm Affected by this issue! (Endorse)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => finalizeCreate()}
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl border border-[#E5E7EB] bg-white hover:bg-gray-50 text-[#6B7280] hover:text-[#1F2937] font-bold text-xs transition-colors"
+                >
+                  Create New Independent Ticket
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!resultData && !similarMatch ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+              {/* LEFT FORM SECTION (8 COLS) */}
+              <div className="lg:col-span-7 space-y-6">
+
+                {/* Input Method Switcher */}
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] p-1.5 flex gap-1 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('upload'); setSelectedFile(null); }}
+                    className={`flex-1 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-colors ${
+                      activeTab === 'upload'
+                        ? 'bg-[#5E4075] text-white shadow-xs'
+                        : 'text-[#6B7280] hover:text-[#1F2937] hover:bg-gray-50'
+                    }`}
+                  >
+                    <Upload className="w-4 h-4" /> Upload Audio File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('record'); setSelectedFile(null); }}
+                    className={`flex-1 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-colors ${
+                      activeTab === 'record'
+                        ? 'bg-[#5E4075] text-white shadow-xs'
+                        : 'text-[#6B7280] hover:text-[#1F2937] hover:bg-gray-50'
+                    }`}
+                  >
+                    <Mic className="w-4 h-4 text-emerald-400" /> Record Live Voice Call
+                  </button>
+                </div>
+
+                {/* Audio Uploader or Recorder Container */}
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 shadow-xs">
+                  {activeTab === 'upload' ? (
+                    <AudioUploader
+                      onFileSelect={(file) => setSelectedFile(file)}
+                      selectedFile={selectedFile}
+                      onClear={() => setSelectedFile(null)}
+                    />
+                  ) : (
+                    <AudioRecorder
+                      onRecorded={(file) => setSelectedFile(file)}
+                      recordedFile={selectedFile}
+                      onClear={() => setSelectedFile(null)}
+                    />
+                  )}
+                </div>
+
+                {/* Location Input */}
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-3 shadow-xs">
+                  <label className="block text-xs font-bold text-[#6B7280] flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#5E4075]" /> Location / Ward Landmark (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={customLocation}
+                    onChange={(e) => setCustomLocation(e.target.value)}
+                    placeholder="e.g. Madison Ave &amp; 4th St Intersection"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] text-xs text-[#1F2937] focus:outline-none focus:ring-1 focus:ring-[#5E4075]"
+                  />
+                </div>
+
+                {/* Submit Action Button */}
+                <button
+                  type="button"
+                  onClick={handleProcessAudio}
+                  disabled={!selectedFile || isProcessing}
+                  className="w-full py-3.5 rounded-xl bg-[#5E4075] hover:bg-[#4C3360] text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing AI Analysis...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" /> Analyze Call &amp; Generate Transcript
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* RIGHT SIDEBAR: REAL-TIME TRANSCRIPT OUTPUT (5 COLS) */}
+              <div className="lg:col-span-5 flex flex-col justify-between bg-white rounded-2xl border border-[#E5E7EB] p-6 shadow-xs space-y-6 min-h-[480px]">
+                <div>
+                  <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3 mb-4">
+                    <h3 className="text-xs font-extrabold text-[#1F2937] uppercase tracking-wider flex items-center gap-2">
+                      <MessageSquareText className="w-4 h-4 text-[#5E4075]" /> Real-Time Transcript Output
+                    </h3>
+                    <span className="text-[10px] text-gray-400 font-mono">Live Sync</span>
+                  </div>
+
+                  {/* Transcript Content Box */}
+                  {isProcessing ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                      <div className="w-8 h-8 border-3 border-[#5E4075]/20 border-t-[#5E4075] rounded-full animate-spin"></div>
+                      <p className="text-xs font-semibold text-[#6B7280]">Transcribing audio call...</p>
+                    </div>
+                  ) : liveTranscript ? (
+                    <div className="space-y-4">
+                      {/* Citizen Bubble */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-extrabold text-[#1F2937]">Citizen (Call)</span>
+                          <span className="text-[#6B7280] font-mono">00:12</span>
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-[#F3F4F6] text-xs text-[#1F2937] font-medium leading-relaxed">
+                          "{liveTranscript}"
+                        </div>
                       </div>
-                      <div>
-                        <h5 className={`text-xs font-semibold ${pipelineStep >= s.step ? 'text-white' : 'text-slate-500'}`}>
-                          {s.label}
-                        </h5>
-                        <p className="text-[11px] text-slate-400">{s.desc}</p>
+
+                      {/* AI Assistant Confirmation Bubble */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-extrabold text-[#5E4075]">AI Assistant</span>
+                          <span className="text-[#6B7280] font-mono">00:25</span>
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-[#5E4075]/10 text-xs text-[#5E4075] font-semibold leading-relaxed border border-[#5E4075]/20">
+                          Got it. I am logging this transcript and parsing categories, locations, and priority scores.
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-center text-[#6B7280]">
+                      <MessageSquareText className="w-8 h-8 text-gray-300 mb-2 stroke-[1.5]" />
+                      <p className="text-xs font-bold text-gray-400">No audio transcript yet</p>
+                      <p className="text-[11px] text-gray-400 mt-1">Upload or record a call and click analyze to view real-time text output here.</p>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleProcessAudio}
+                  disabled={!selectedFile || isProcessing}
+                  className="w-full py-3 rounded-xl bg-[#5E4075] hover:bg-[#4C3360] text-white font-extrabold text-xs shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                >
+                  <Sparkles className="w-4 h-4" /> Process AI Analysis
+                </button>
+              </div>
+
+            </div>
+          ) : resultData ? (
+            /* SUCCESS REGISTRATION PANEL */
+            <div className="bg-white rounded-2xl border border-emerald-200 p-6 space-y-6 shadow-xs animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-4 flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shrink-0">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-[#1F2937]">Complaint Successfully Registered!</h3>
+                    <span className="text-xs font-mono text-[#5E4075]">Tracking Number: {resultData.tracking_number}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/citizen/dashboard')}
+                  className="px-4 py-2 rounded-xl bg-[#5E4075] hover:bg-[#4C3360] text-white font-extrabold text-xs transition-colors"
+                >
+                  View in Dashboard
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                  <span className="text-[#6B7280] font-medium block mb-1">Category &amp; Priority</span>
+                  <span className="font-extrabold text-[#1F2937] text-sm">{resultData.category}</span>
+                  <span className={`block mt-1 text-[11px] font-extrabold ${
+                    resultData.priority === 'Emergency' ? 'text-red-600' : 'text-amber-600'
+                  }`}>{resultData.priority} Priority</span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                  <span className="text-[#6B7280] font-medium block mb-1">Assigned Department</span>
+                  <span className="font-extrabold text-[#5E4075] text-sm">{resultData.department_name}</span>
+                  <span className="text-[#6B7280] block text-[11px] mt-1">Est. Resolution: {resultData.estimated_resolution}</span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                  <span className="text-[#6B7280] font-medium block mb-1">Community Impact</span>
+                  <span className="font-extrabold text-emerald-600 text-sm flex items-center gap-1">
+                    <Users className="w-4 h-4" /> {resultData.affected_citizens_count} Affected Citizen(s)
+                  </span>
                 </div>
               </div>
-            </div>
 
-          </div>
-        ) : resultData ? (
-          <div className="p-8 rounded-3xl glass-panel border border-emerald-500/40 space-y-6 animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Complaint Successfully Registered!</h3>
-                  <span className="text-xs font-mono text-indigo-300">Tracking Number: {resultData.tracking_number}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => navigate('/citizen/dashboard')}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold"
-              >
-                View in Dashboard
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10">
-                <span className="text-slate-400 block mb-1">Category & Priority</span>
-                <span className="font-bold text-white text-sm">{resultData.category}</span>
-                <span className={`block mt-1 text-[11px] font-bold ${
-                  resultData.priority === 'Emergency' ? 'text-red-400' : 'text-amber-400'
-                }`}>{resultData.priority} Priority</span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10">
-                <span className="text-slate-400 block mb-1">Assigned Department</span>
-                <span className="font-bold text-indigo-300 text-sm">{resultData.department_name}</span>
-                <span className="text-slate-400 block text-[11px] mt-1">Est. Resolution: {resultData.estimated_resolution}</span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10">
-                <span className="text-slate-400 block mb-1">Community Impact</span>
-                <span className="font-bold text-emerald-400 text-sm flex items-center gap-1">
-                  <Users className="w-4 h-4" /> {resultData.affected_citizens_count} Affected Citizen(s)
-                </span>
+              <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] text-xs">
+                <span className="text-[#6B7280] block mb-1 font-bold">Speech-to-Text Verbatim Transcript</span>
+                <p className="text-[#1F2937] font-mono leading-relaxed bg-white p-3 rounded-lg border border-[#E5E7EB]">
+                  "{resultData.transcript}"
+                </p>
               </div>
             </div>
+          ) : null}
 
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 text-xs">
-              <span className="text-slate-400 block mb-1 font-semibold">Groq Whisper Verbatim Transcript</span>
-              <p className="text-slate-200 italic font-mono leading-relaxed bg-slate-950/60 p-3 rounded-xl">
-                "{resultData.transcript}"
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-      </main>
-
-      <Footer />
+        </main>
+      </div>
     </div>
   );
 };

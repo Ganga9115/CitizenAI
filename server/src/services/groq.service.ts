@@ -5,12 +5,11 @@ import { ENV } from '../config/env';
 
 export class GroqService {
   /**
-   * Transcribes audio using Groq Whisper API
-   * Model: whisper-large-v3
+   * Transcribes audio using configured speech-to-text service
    */
   static async transcribeAudio(filePath: string): Promise<string> {
     if (!ENV.GROQ_API_KEY) {
-      console.log('[GroqService] No GROQ_API_KEY set. Returning realistic fallback transcript.');
+      console.log('[SpeechToText Service] No API key set. Returning realistic fallback transcript.');
       return this.getFallbackTranscript(filePath);
     }
 
@@ -32,10 +31,10 @@ export class GroqService {
         return response.data.text;
       }
 
-      throw new Error('No transcript text returned from Groq Whisper API');
+      throw new Error('No transcript text returned from speech-to-text service');
     } catch (error: any) {
-      console.error('[GroqService Error]', error?.response?.data || error.message);
-      console.log('[GroqService] Falling back to high-fidelity simulated transcript.');
+      console.error('[SpeechToText Service Error]', error?.response?.data || error.message);
+      console.log('[SpeechToText Service] Falling back to high-fidelity simulated transcript.');
       return this.getFallbackTranscript(filePath);
     }
   }

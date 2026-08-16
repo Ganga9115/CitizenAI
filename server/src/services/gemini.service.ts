@@ -20,11 +20,11 @@ export interface AIAnalysisResult {
 
 export class GeminiService {
   /**
-   * Analyzes transcript using Gemini 2.5 Flash API
+   * Analyzes transcript using AI extraction service
    */
   static async analyzeTranscript(transcript: string): Promise<AIAnalysisResult> {
     if (!ENV.GEMINI_API_KEY) {
-      console.log('[GeminiService] No GEMINI_API_KEY set. Returning fallback mock AI extraction.');
+      console.log('[AI Service] No AI extraction key set. Returning fallback mock analysis.');
       return this.getFallbackAnalysis(transcript);
     }
 
@@ -57,10 +57,10 @@ export class GeminiService {
         return this.normalizeAnalysis(parsedJSON);
       }
 
-      throw new Error('Gemini API returned empty response body');
+      throw new Error('AI extraction service returned empty response body');
     } catch (error: any) {
-      console.error('[GeminiService Error]', error?.response?.data || error.message);
-      console.log('[GeminiService] Using fallback intelligence extractor.');
+      console.error('[AI Service Error]', error?.response?.data || error.message);
+      console.log('[AI Service] Using fallback intelligence extractor.');
       return this.getFallbackAnalysis(transcript);
     }
   }

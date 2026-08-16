@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Bot, LogOut, User as UserIcon, Shield, Headphones, BarChart2, Radio, Trophy } from 'lucide-react';
+import { LogOut, BrainCircuit } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -14,145 +14,138 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full glass-panel border-b border-white/10 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 w-full bg-white border-b border-[#E5E7EB] shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
-        {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 p-0.5 shadow-lg group-hover:scale-105 transition-transform">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Bot className="w-5 h-5 text-indigo-400 group-hover:rotate-12 transition-transform" />
-            </div>
+        {/* Brand Logo matching the cropped image */}
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-lg bg-[#5E4075] flex items-center justify-center text-white shadow-sm">
+            <BrainCircuit className="w-5 h-5 stroke-[2.2]" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-200">
-              Citizen<span className="text-indigo-400">AI</span>
-            </span>
-            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-medium">
-              Call Intelligence Platform
-            </span>
-          </div>
+          <span className="font-extrabold text-xl tracking-tight text-[#1F2937]">
+            CivicAI
+          </span>
         </Link>
 
-        {/* Dynamic Navigation */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+        {/* Navigation items from image + auth routing support */}
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
           {user ? (
             <>
               {user.role === 'CITIZEN' && (
                 <>
                   <Link
                     to="/citizen/dashboard"
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                      location.pathname.includes('/citizen/dashboard') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-300 hover:text-white'
+                    className={`transition-colors ${
+                      location.pathname.includes('/citizen/dashboard')
+                        ? 'text-[#1F2937] font-semibold'
+                        : 'text-[#6B7280] hover:text-[#1F2937]'
                     }`}
                   >
-                    <Headphones className="w-4 h-4" /> My Complaints
+                    My Complaints
                   </Link>
                   <Link
                     to="/citizen/raise"
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                      location.pathname.includes('/citizen/raise') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-300 hover:text-white'
+                    className={`transition-colors ${
+                      location.pathname.includes('/citizen/raise')
+                        ? 'text-[#1F2937] font-semibold'
+                        : 'text-[#6B7280] hover:text-[#1F2937]'
                     }`}
                   >
-                    <Radio className="w-4 h-4 text-emerald-400 animate-pulse" /> Raise Complaint
+                    Raise Complaint
                   </Link>
                 </>
               )}
 
               {user.role === 'OFFICER' && (
-                <>
-                  <Link
-                    to="/officer/dashboard"
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                      location.pathname.includes('/officer/dashboard') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    <Shield className="w-4 h-4 text-indigo-400" /> Triage Queue
-                  </Link>
-                  <Link
-                    to="/officer/map"
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                      location.pathname.includes('/officer/map') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    GIS City Map
-                  </Link>
-                </>
+                <Link
+                  to="/officer/dashboard"
+                  className={`transition-colors ${
+                    location.pathname.includes('/officer/dashboard')
+                      ? 'text-[#1F2937] font-semibold'
+                      : 'text-[#6B7280] hover:text-[#1F2937]'
+                  }`}
+                >
+                  Triage Queue
+                </Link>
               )}
 
               {user.role === 'ADMIN' && (
                 <>
                   <Link
                     to="/admin/dashboard"
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                      location.pathname.includes('/admin/dashboard') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-300 hover:text-white'
+                    className={`transition-colors ${
+                      location.pathname.includes('/admin/dashboard')
+                        ? 'text-[#1F2937] font-semibold'
+                        : 'text-[#6B7280] hover:text-[#1F2937]'
                     }`}
                   >
-                    <BarChart2 className="w-4 h-4 text-purple-400" /> Analytics
+                    Analytics
                   </Link>
                   <Link
                     to="/admin/users"
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                      location.pathname.includes('/admin/users') ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-300 hover:text-white'
+                    className={`transition-colors ${
+                      location.pathname.includes('/admin/users')
+                        ? 'text-[#1F2937] font-semibold'
+                        : 'text-[#6B7280] hover:text-[#1F2937]'
                     }`}
                   >
                     Users & Officers
                   </Link>
                 </>
               )}
-
-              {/* Department Performance Scoreboard Link (Available to All Roles) */}
-              <Link
-                to="/scoreboard"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${
-                  location.pathname === '/scoreboard' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Trophy className="w-4 h-4 text-amber-400" /> Scoreboard
-              </Link>
             </>
           ) : (
             <>
-              <a href="#features" className="text-slate-300 hover:text-white transition-colors">Features</a>
-              <a href="#how-it-works" className="text-slate-300 hover:text-white transition-colors">How It Works</a>
-              <Link to="/scoreboard" className="text-slate-300 hover:text-white transition-colors flex items-center gap-1">
-                <Trophy className="w-3.5 h-3.5 text-amber-400" /> Scoreboard
-              </Link>
+              <a href="#features" className="text-[#1F2937] font-semibold hover:text-[#5E4075] transition-colors">
+                Features
+              </a>
+              <a href="#how-it-works" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
+                How it Works
+              </a>
+              <a href="#departments" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
+                Departments
+              </a>
+              <a href="#security" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
+                Security
+              </a>
+              <a href="#pricing" className="text-[#6B7280] hover:text-[#1F2937] transition-colors">
+                Pricing
+              </a>
             </>
           )}
         </nav>
 
-        {/* User Status / Auth Actions */}
+        {/* User Status / Action Buttons */}
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-xs font-semibold text-slate-100">{user.fullName}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase font-mono font-medium">
+                <span className="text-xs font-semibold text-[#1F2937]">{user.fullName}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E1D2FF] text-[#5E4075] uppercase font-mono font-medium">
                   {user.role}
                 </span>
               </div>
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors border border-white/10"
+                className="p-2 rounded-lg bg-[#F3F4F6] text-[#6B7280] hover:text-[#1F2937] hover:bg-[#E5E7EB] transition-colors border border-[#E5E7EB]"
                 title="Logout"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <Link
                 to="/login"
-                className="px-4 py-2 text-sm font-medium text-slate-200 hover:text-white transition-colors"
+                className="text-sm font-semibold text-[#5E4075] hover:text-[#4a325d] transition-colors"
               >
-                Login
+                Sign In
               </Link>
               <Link
                 to="/register"
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl shadow-lg shadow-indigo-500/25 transition-all"
+                className="px-4 py-2 text-sm font-semibold text-white bg-[#5E4075] hover:bg-[#4a325d] rounded-lg shadow-sm transition-all"
               >
-                Get Started
+                Request Demo
               </Link>
             </div>
           )}

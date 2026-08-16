@@ -2,15 +2,15 @@
 
 A full-stack, enterprise-grade civic response application that transforms citizen audio call complaints into structured, actionable intelligence.
 
-Powered by **Groq Whisper API** (Speech-to-Text) and **Gemini 2.5 Flash API** (Structured JSON Analysis), the platform automates category extraction, emergency prioritization, department routing, duplicate complaint detection, and officer dispatching.
+Powered by speech-to-text and AI extraction services, the platform automates category extraction, emergency prioritization, department routing, duplicate complaint detection, and officer dispatching.
 
 ---
 
 ## 🌟 Key Features
 
 - **Dark-Mode Enterprise Aesthetic**: Designed with Apple, Linear, Stripe & Vercel visual polish, glassmorphism, and dynamic animations.
-- **Speech-to-Text Pipeline (Groq Whisper)**: Sub-second audio transcription supporting WAV, MP3, M4A, OGG, and WEBM formats.
-- **Deep Extraction (Gemini 2.5 Flash)**: Returns structured JSON containing Category, Priority, Department, Summary, Sentiment, Citizen Emotion, Urgency, Confidence Score, Duplicate Risk, Location, and Suggested Actions.
+-- **Speech-to-Text Pipeline**: Sub-second audio transcription supporting WAV, MP3, M4A, OGG, and WEBM formats.
+-- **AI Extraction**: Returns structured JSON containing Category, Priority, Department, Summary, Sentiment, Citizen Emotion, Urgency, Confidence Score, Duplicate Risk, Location, and Suggested Actions.
 - **Emergency Dispatch Triage**: Real-time high-priority alerts for life-threatening incidents (flooding, dangling power wires, fires).
 - **Duplicate Prevention Engine**: Detects matching incidents in the same geographical vicinity to reduce redundant deployments.
 - **GIS Leaflet Map**: Interactive map with priority color-coded markers.
@@ -37,7 +37,7 @@ citizen-call-intelligence/
 │   │   ├── controllers/              # Auth, Complaint, AI, Officer, Admin, Analytics
 │   │   ├── middleware/               # Auth JWT, Multer Audio Upload, Rate Limit, Error Handler
 │   │   ├── routes/                   # Express Endpoint Handlers
-│   │   ├── services/                 # Groq Whisper, Gemini 2.5 Flash, Complaint DB Store
+│   │   ├── services/                 # Speech-to-Text, AI Extraction, Complaint DB Store
 │   │   └── utils/                    # Prompts, Password & JWT Helpers
 │   └── schema.sql                    # PostgreSQL Database Schema
 └── README.md
@@ -50,23 +50,16 @@ citizen-call-intelligence/
 - **Frontend**: React 19, Vite, TypeScript, Tailwind CSS, Framer Motion, Lucide Icons, Recharts, React Leaflet
 - **Backend**: Node.js, Express, TypeScript, Multer, JWT, bcryptjs
 - **Database**: Supabase PostgreSQL (with automatic in-memory fallback store)
-- **AI Models**:
-  - `whisper-large-v3` (Groq Whisper API)
-  - `gemini-2.5-flash` (Google Gemini API)
 
 ---
 
-## ⚙️ Environment Variables
+## 🔑 Environment Variables
 
 ### Backend (`server/.env`)
 ```env
-PORT=5000
+PORT=5001
 NODE_ENV=development
 JWT_SECRET=super-secret-jwt-key-citizen-intelligence-2026
-
-# AI Credentials
-GROQ_API_KEY=your_groq_whisper_api_key_here
-GEMINI_API_KEY=your_gemini_2.5_flash_api_key_here
 
 # Database
 SUPABASE_URL=https://your-supabase-project.supabase.co
@@ -86,7 +79,7 @@ cd server
 npm install
 npm run dev
 ```
-*Server starts on `http://localhost:5000`*
+*Server starts on `http://localhost:5001`*
 
 ### 2. Install Client Dependencies & Start
 ```bash
@@ -118,4 +111,4 @@ npm run dev
 1. Deploy `server/` directory as a Web Service on Render.
 2. Build Command: `npm run build`
 3. Start Command: `node dist/app.js`
-4. Configure environment variables (`GROQ_API_KEY`, `GEMINI_API_KEY`, `SUPABASE_URL`).
+4. Configure environment variables as needed for your AI and database services.

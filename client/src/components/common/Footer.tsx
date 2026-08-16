@@ -12,34 +12,28 @@ export const Footer: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
                 <Bot className="w-4 h-4 text-white" />
               </div>
-              <span className="font-bold text-lg text-white tracking-tight">CitizenAI</span>
+              <span className="font-bold text-lg text-white tracking-tight">Citizen Portal</span>
             </div>
             <p className="text-slate-400 text-sm leading-relaxed max-w-md">
-              Enterprise AI platform converting raw citizen phone call audio into structured civic complaints, automatic department routing, emergency dispatching, and duplicate detection powered by Groq Whisper & Gemini 2.5.
+              Platform for collecting citizen audio complaints and delivering structured reports to responsible departments.
             </p>
           </div>
 
           <div>
-            <h4 className="font-semibold text-white mb-4">Tech Stack & AI</h4>
+            <h4 className="font-semibold text-white mb-4">Tech</h4>
             <ul className="space-y-2 text-xs">
-              <li className="flex items-center gap-2 text-slate-300">
-                <Cpu className="w-3.5 h-3.5 text-indigo-400" /> Groq Whisper Speech-to-Text
-              </li>
-              <li className="flex items-center gap-2 text-slate-300">
-                <Bot className="w-3.5 h-3.5 text-purple-400" /> Gemini 2.5 Flash API Engine
-              </li>
-              <li className="flex items-center gap-2 text-slate-300">
-                <Shield className="w-3.5 h-3.5 text-emerald-400" /> Supabase PostgreSQL Database
-              </li>
+              <li className="flex items-center gap-2 text-slate-300">Speech-to-Text</li>
+              <li className="flex items-center gap-2 text-slate-300">AI Analysis</li>
+              <li className="flex items-center gap-2 text-slate-300">Database</li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-white mb-4">Portals & Roles</h4>
+            <h4 className="font-semibold text-white mb-4">Portals</h4>
             <ul className="space-y-2 text-xs text-slate-300">
-              <li>Citizen Audio Complaint Portal</li>
-              <li>Officer Emergency Triage Queue</li>
-              <li>Admin Analytics & GIS Map</li>
+              <li>Citizen Complaint Portal</li>
+              <li>Officer Triage Queue</li>
+              <li>Admin Analytics</li>
             </ul>
           </div>
         </div>
