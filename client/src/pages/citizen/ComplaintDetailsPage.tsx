@@ -1,8 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { apiClient } from '../../services/api';
-import { Complaint } from '../../types';
-import { useNotification } from '../../contexts/NotificationContext';
+import React, {
+  useState,
+  useEffect
+} from 'react';
+
+import {
+  useParams,
+  Link
+} from 'react-router-dom';
+
+import {
+  apiClient
+} from '../../services/api';
+
+import {
+  Complaint
+} from '../../types';
+
+import {
+  useAuth
+} from '../../contexts/AuthContext';
+
+import {
+  useNotification
+} from '../../contexts/NotificationContext';
+
 import {
   BrainCircuit,
   LayoutDashboard,
@@ -28,7 +49,14 @@ import {
 } from 'lucide-react';
 
 export const ComplaintDetailsPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+
+  const { id } =
+    useParams<{
+      id: string
+    }>();
+
+  const { user } =
+    useAuth();
 
   const [complaint, setComplaint] =
     useState<Complaint | null>(null);
@@ -39,7 +67,6 @@ export const ComplaintDetailsPage: React.FC = () => {
   const [isPlaying, setIsPlaying] =
     useState(false);
 
-  // Feedback State
   const [rating, setRating] =
     useState<number>(5);
 
@@ -52,9 +79,9 @@ export const ComplaintDetailsPage: React.FC = () => {
   const { showToast } =
     useNotification();
 
-  // =========================================================
-  // FETCH COMPLAINT
-  // =========================================================
+  // =====================================================
+  // FETCH
+  // =====================================================
 
   useEffect(() => {
     if (id) {
@@ -62,73 +89,85 @@ export const ComplaintDetailsPage: React.FC = () => {
     }
   }, [id]);
 
-  const fetchDetails = async () => {
-    try {
-      const res =
-        await apiClient.get(
-          `/complaints/${id}`
+  const fetchDetails =
+    async () => {
+
+      try {
+
+        const res =
+          await apiClient.get(
+            `/complaints/${id}`
+          );
+
+        if (
+          res.data.success
+        ) {
+
+          setComplaint(
+            res.data.complaint
+          );
+        }
+
+      } catch (err) {
+
+        console.error(
+          '[ComplaintDetails] Failed to fetch:',
+          err
         );
 
-      if (res.data.success) {
-        setComplaint(
-          res.data.complaint
-        );
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
+  // =====================================================
+  // ENDORSE
+  // =====================================================
+
+  const handleEndorse =
+    async () => {
+
+      if (!complaint) {
+        return;
       }
 
-    } catch (err) {
-      console.error(
-        '[ComplaintDetails] Failed to fetch complaint:',
-        err
-      );
+      try {
 
-    } finally {
-      setLoading(false);
-    }
-  };
+        const res =
+          await apiClient.post(
+            `/complaints/${complaint.id}/endorse`
+          );
 
-  // =========================================================
-  // ENDORSE
-  // =========================================================
+        if (
+          res.data.success
+        ) {
 
-  const handleEndorse = async () => {
-    if (!complaint) {
-      return;
-    }
+          showToast(
+            'Endorsed!',
+            'You are registered as an affected citizen. Complaint priority updated.',
+            'success'
+          );
 
-    try {
+          setComplaint(
+            res.data.complaint
+          );
+        }
 
-      const res =
-        await apiClient.post(
-          `/complaints/${complaint.id}/endorse`
-        );
-
-      if (res.data.success) {
+      } catch (err: any) {
 
         showToast(
-          'Endorsed!',
-          'You are registered as an affected citizen. Complaint priority updated.',
-          'success'
-        );
-
-        setComplaint(
-          res.data.complaint
+          'Error',
+          err.response?.data?.message ||
+            'Failed to endorse complaint',
+          'error'
         );
       }
+    };
 
-    } catch (err: any) {
-
-      showToast(
-        'Error',
-        err.response?.data?.message ||
-          'Failed to endorse complaint',
-        'error'
-      );
-    }
-  };
-
-  // =========================================================
+  // =====================================================
   // FEEDBACK
-  // =========================================================
+  // =====================================================
 
   const handleFeedbackSubmit =
     async (
@@ -155,7 +194,9 @@ export const ComplaintDetailsPage: React.FC = () => {
             }
           );
 
-        if (res.data.success) {
+        if (
+          res.data.success
+        ) {
 
           showToast(
             'Thank You!',
@@ -185,11 +226,12 @@ export const ComplaintDetailsPage: React.FC = () => {
       }
     };
 
-  // =========================================================
+  // =====================================================
   // LOADING
-  // =========================================================
+  // =====================================================
 
   if (loading) {
+
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-[#6B7280] font-semibold text-xs">
         Loading complaint details...
@@ -197,13 +239,14 @@ export const ComplaintDetailsPage: React.FC = () => {
     );
   }
 
-  // =========================================================
+  // =====================================================
   // NOT FOUND
-  // =========================================================
+  // =====================================================
 
   if (!complaint) {
+
     return (
-      <div className="min-h-screen bg-[#F8FAFC] text-[#1F2937] flex flex-col items-center justify-center space-y-4">
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center space-y-4">
 
         <h2 className="text-base font-extrabold">
           Complaint Not Found
@@ -211,7 +254,7 @@ export const ComplaintDetailsPage: React.FC = () => {
 
         <Link
           to="/citizen/dashboard"
-          className="px-4 py-2 rounded-xl bg-[#5E4075] text-white font-extrabold text-xs shadow-xs hover:bg-[#4C3360] transition-colors"
+          className="px-4 py-2 rounded-xl bg-[#5E4075] text-white font-extrabold text-xs"
         >
           Back to Dashboard
         </Link>
@@ -220,9 +263,9 @@ export const ComplaintDetailsPage: React.FC = () => {
     );
   }
 
-  // =========================================================
-  // GPS VALIDATION
-  // =========================================================
+  // =====================================================
+  // GPS
+  // =====================================================
 
   const hasGps =
     typeof complaint.latitude ===
@@ -236,44 +279,37 @@ export const ComplaintDetailsPage: React.FC = () => {
       complaint.longitude
     );
 
-  // =========================================================
-  // MAP URL
-  // =========================================================
+  const mapUrl =
+    hasGps
+      ? `https://www.openstreetmap.org/export/embed.html?bbox=${
+          complaint.longitude! - 0.01
+        }%2C${
+          complaint.latitude! - 0.01
+        }%2C${
+          complaint.longitude! + 0.01
+        }%2C${
+          complaint.latitude! + 0.01
+        }&layer=mapnik&marker=${
+          complaint.latitude
+        }%2C${
+          complaint.longitude
+        }`
+      : '';
 
-  const mapUrl = hasGps
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${
-        complaint.longitude! - 0.01
-      }%2C${
-        complaint.latitude! - 0.01
-      }%2C${
-        complaint.longitude! + 0.01
-      }%2C${
-        complaint.latitude! + 0.01
-      }&layer=mapnik&marker=${
-        complaint.latitude
-      }%2C${
-        complaint.longitude
-      }`
-    : '';
+  const openMapUrl =
+    hasGps
+      ? `https://www.openstreetmap.org/?mlat=${complaint.latitude}&mlon=${complaint.longitude}#map=17/${complaint.latitude}/${complaint.longitude}`
+      : '#';
 
-  // =========================================================
-  // GOOGLE MAPS / OSM OPEN LINK
-  // =========================================================
-
-  const openMapUrl = hasGps
-    ? `https://www.openstreetmap.org/?mlat=${complaint.latitude}&mlon=${complaint.longitude}#map=17/${complaint.latitude}/${complaint.longitude}`
-    : '#';
-
-  // =========================================================
-  // MAIN UI
-  // =========================================================
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
+
     <div className="min-h-screen flex bg-[#F8FAFC] text-[#1F2937]">
 
-      {/* =====================================================
-          LEFT SIDEBAR
-          ===================================================== */}
+      {/* SIDEBAR */}
 
       <aside className="w-64 bg-[#5E4075] text-white flex flex-col justify-between p-6 shrink-0 hidden md:flex">
 
@@ -284,13 +320,13 @@ export const ComplaintDetailsPage: React.FC = () => {
             className="flex items-center gap-2.5 mb-10"
           >
 
-            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
 
-              <BrainCircuit className="w-5 h-5 stroke-[2.2]" />
+              <BrainCircuit className="w-5 h-5" />
 
             </div>
 
-            <span className="font-extrabold text-xl tracking-tight text-white">
+            <span className="font-extrabold text-xl">
               CivicAI
             </span>
 
@@ -300,7 +336,7 @@ export const ComplaintDetailsPage: React.FC = () => {
 
             <Link
               to="/citizen/dashboard"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs"
             >
               <LayoutDashboard className="w-4 h-4" />
               My Dashboard
@@ -308,7 +344,7 @@ export const ComplaintDetailsPage: React.FC = () => {
 
             <Link
               to="/citizen/raise"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs"
             >
               <PlusCircle className="w-4 h-4" />
               Raise New Complaint
@@ -316,48 +352,46 @@ export const ComplaintDetailsPage: React.FC = () => {
 
             <Link
               to="/citizen/dashboard"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/15 text-white font-semibold text-xs transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/15 text-white font-semibold text-xs"
             >
               <History className="w-4 h-4" />
               Complaint History
             </Link>
 
-            <a
-              href="#notifications"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            <Link
+              to="/notifications"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs"
             >
               <Bell className="w-4 h-4" />
               Notifications
-            </a>
+            </Link>
 
             <Link
               to="/profile"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs"
             >
               <Settings className="w-4 h-4" />
-              Settings &amp; Profile
+              Settings & Profile
             </Link>
 
           </nav>
         </div>
 
-        {/* USER CARD */}
+        {/* DYNAMIC USER */}
 
         <Link
           to="/profile"
-          className="pt-4 border-t border-white/10 flex items-center gap-3 hover:opacity-90 transition-opacity"
+          className="pt-4 border-t border-white/10 flex items-center gap-3"
         >
 
-          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs shrink-0">
-
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
             <User className="w-5 h-5" />
-
           </div>
 
           <div className="overflow-hidden">
 
-            <h4 className="text-xs font-bold text-white truncate">
-              Ganga
+            <h4 className="text-xs font-bold truncate">
+              {user?.fullName || 'Citizen'}
             </h4>
 
             <p className="text-[10px] text-white/70 truncate">
@@ -370,13 +404,9 @@ export const ComplaintDetailsPage: React.FC = () => {
 
       </aside>
 
-      {/* =====================================================
-          MAIN CONTENT
-          ===================================================== */}
+      {/* MAIN */}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-
-        {/* TOP BAR */}
 
         <header className="bg-white border-b border-[#E5E7EB] px-6 py-4 flex items-center justify-between gap-4">
 
@@ -384,14 +414,14 @@ export const ComplaintDetailsPage: React.FC = () => {
 
             <Link
               to="/citizen/dashboard"
-              className="p-2 rounded-xl border border-[#E5E7EB] text-[#6B7280] hover:text-[#1F2937] hover:bg-gray-50 transition-colors"
+              className="p-2 rounded-xl border border-[#E5E7EB]"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
 
             <div>
 
-              <h1 className="text-lg font-extrabold text-[#1F2937]">
+              <h1 className="text-lg font-extrabold">
                 Complaint Details
               </h1>
 
@@ -405,18 +435,6 @@ export const ComplaintDetailsPage: React.FC = () => {
 
           <div className="flex items-center gap-4">
 
-            <div className="relative w-48 sm:w-64 hidden sm:block">
-
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#F3F4F6] text-xs text-[#1F2937] focus:outline-none focus:ring-1 focus:ring-[#5E4075]"
-              />
-
-            </div>
-
             <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
 
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -427,7 +445,7 @@ export const ComplaintDetailsPage: React.FC = () => {
 
             <button
               type="button"
-              className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:text-[#1F2937] hover:bg-gray-50 transition-colors"
+              className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center"
             >
               <Bell className="w-4 h-4" />
             </button>
@@ -436,113 +454,70 @@ export const ComplaintDetailsPage: React.FC = () => {
 
         </header>
 
-        {/* =====================================================
-            CONTENT
-            ===================================================== */}
-
         <main className="p-6 max-w-7xl w-full mx-auto space-y-6">
 
-          {/* MAIN HEADER */}
+          {/* MAIN CARD */}
 
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-6 shadow-xs">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-6">
 
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#E5E7EB] pb-5">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 border-b border-[#E5E7EB] pb-5">
 
               <div className="space-y-2">
 
                 <div className="flex items-center gap-2 flex-wrap">
 
                   <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-[#5E4075]/10 text-[#5E4075]">
-
                     {complaint.tracking_number}
-
                   </span>
 
-                  <span
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider ${
-                      complaint.priority ===
-                      'Emergency'
-                        ? 'bg-red-50 text-red-600 border border-red-200'
-                        : 'bg-[#5E4075]/10 text-[#5E4075]'
-                    }`}
-                  >
-
-                    {complaint.priority}
-                    {' '}
-                    Priority
-
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-[#5E4075]/10 text-[#5E4075]">
+                    {complaint.priority} Priority
                   </span>
 
                   <span className="text-xs font-semibold text-[#6B7280]">
-
                     {complaint.category}
-
                   </span>
 
                 </div>
 
-                <h2 className="text-xl font-extrabold text-[#1F2937]">
-
+                <h2 className="text-xl font-extrabold">
                   {complaint.summary}
-
                 </h2>
 
               </div>
 
               <div className="flex flex-col items-start sm:items-end gap-2.5">
 
-                <span
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 ${
-                    complaint.status ===
-                    'Resolved'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : complaint.status ===
-                        'In Progress'
-                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                      : 'bg-[#5E4075]/10 text-[#5E4075] border border-[#5E4075]/20'
-                  }`}
-                >
+                <span className="px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-[#5E4075]/10 text-[#5E4075] flex items-center gap-1.5">
 
-                  {complaint.status ===
-                    'Resolved' && (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  {complaint.status === 'Resolved' && (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
                   )}
 
-                  {complaint.status ===
-                    'In Progress' && (
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  {complaint.status === 'In Progress' && (
+                    <Clock className="w-3.5 h-3.5" />
                   )}
 
-                  {complaint.status !==
-                    'Resolved' &&
-                    complaint.status !==
-                    'In Progress' && (
-                    <AlertCircle className="w-3.5 h-3.5 text-[#5E4075]" />
-                  )}
+                  {complaint.status !== 'Resolved' &&
+                    complaint.status !== 'In Progress' && (
+                      <AlertCircle className="w-3.5 h-3.5" />
+                    )}
 
                   {complaint.status}
 
                 </span>
 
-                {complaint.status !==
-                  'Resolved' && (
+                {complaint.status !== 'Resolved' && (
 
                   <button
                     type="button"
-                    onClick={
-                      handleEndorse
-                    }
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition-colors"
+                    onClick={handleEndorse}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5"
                   >
 
                     <ThumbsUp className="w-3.5 h-3.5" />
 
-                    Affected (
-                    {
-                      complaint
-                        .affected_citizens_count
-                    }
-                    )
+                    Affected ({complaint.affected_citizens_count})
 
                   </button>
 
@@ -558,11 +533,11 @@ export const ComplaintDetailsPage: React.FC = () => {
 
               <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
-                <span className="text-[#6B7280] font-medium block mb-1">
+                <span className="text-[#6B7280] block mb-1">
                   Community Impact
                 </span>
 
-                <strong className="text-emerald-600 text-sm font-extrabold flex items-center gap-1">
+                <strong className="text-emerald-600 text-sm flex items-center gap-1">
 
                   <Users className="w-4 h-4" />
 
@@ -576,11 +551,11 @@ export const ComplaintDetailsPage: React.FC = () => {
 
               <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
-                <span className="text-[#6B7280] font-medium block mb-1">
+                <span className="text-[#6B7280] block mb-1">
                   Department
                 </span>
 
-                <strong className="text-[#1F2937] text-sm font-extrabold">
+                <strong className="text-sm">
                   {complaint.department_name}
                 </strong>
 
@@ -588,13 +563,13 @@ export const ComplaintDetailsPage: React.FC = () => {
 
               <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
-                <span className="text-[#6B7280] font-medium block mb-1">
+                <span className="text-[#6B7280] block mb-1">
                   Complaint Location
                 </span>
 
-                <strong className="text-[#1F2937] text-sm font-extrabold flex items-center gap-1 truncate">
+                <strong className="text-sm flex items-center gap-1 truncate">
 
-                  <MapPin className="w-3.5 h-3.5 text-[#5E4075] shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-[#5E4075]" />
 
                   {complaint.location}
 
@@ -604,11 +579,11 @@ export const ComplaintDetailsPage: React.FC = () => {
 
               <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
-                <span className="text-[#6B7280] font-medium block mb-1">
+                <span className="text-[#6B7280] block mb-1">
                   Est. Resolution Time
                 </span>
 
-                <strong className="text-[#1F2937] text-sm font-extrabold">
+                <strong className="text-sm">
                   {complaint.estimated_resolution}
                 </strong>
 
@@ -618,17 +593,15 @@ export const ComplaintDetailsPage: React.FC = () => {
 
           </div>
 
-          {/* =====================================================
-              GPS LOCATION + MAP
-              ===================================================== */}
+          {/* GPS MAP */}
 
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-5 shadow-xs">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-5">
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 
               <div>
 
-                <h3 className="text-sm font-extrabold text-[#1F2937] flex items-center gap-2">
+                <h3 className="text-sm font-extrabold flex items-center gap-2">
 
                   <Navigation className="w-4 h-4 text-[#5E4075]" />
 
@@ -637,9 +610,7 @@ export const ComplaintDetailsPage: React.FC = () => {
                 </h3>
 
                 <p className="text-[11px] text-[#6B7280] mt-1">
-
                   Location captured automatically when the complaint was submitted.
-
                 </p>
 
               </div>
@@ -650,7 +621,7 @@ export const ComplaintDetailsPage: React.FC = () => {
                   href={openMapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#5E4075] hover:bg-[#4C3360] text-white text-xs font-extrabold transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#5E4075] text-white text-xs font-extrabold"
                 >
 
                   <MapPin className="w-3.5 h-3.5" />
@@ -667,11 +638,9 @@ export const ComplaintDetailsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
 
-                {/* MAP */}
-
                 <div className="lg:col-span-3">
 
-                  <div className="rounded-2xl overflow-hidden border border-[#E5E7EB] bg-[#F8FAFC]">
+                  <div className="rounded-2xl overflow-hidden border border-[#E5E7EB]">
 
                     <iframe
                       title="Complaint GPS Location"
@@ -684,17 +653,15 @@ export const ComplaintDetailsPage: React.FC = () => {
 
                 </div>
 
-                {/* COORDINATES */}
-
                 <div className="space-y-4">
 
                   <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
-                    <span className="text-[11px] text-[#6B7280] font-semibold block mb-1">
+                    <span className="text-[11px] text-[#6B7280] block mb-1">
                       Latitude
                     </span>
 
-                    <strong className="text-sm font-mono text-[#1F2937]">
+                    <strong className="text-sm font-mono">
                       {Number(
                         complaint.latitude
                       ).toFixed(6)}
@@ -704,11 +671,11 @@ export const ComplaintDetailsPage: React.FC = () => {
 
                   <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
-                    <span className="text-[11px] text-[#6B7280] font-semibold block mb-1">
+                    <span className="text-[11px] text-[#6B7280] block mb-1">
                       Longitude
                     </span>
 
-                    <strong className="text-sm font-mono text-[#1F2937]">
+                    <strong className="text-sm font-mono">
                       {Number(
                         complaint.longitude
                       ).toFixed(6)}
@@ -728,8 +695,8 @@ export const ComplaintDetailsPage: React.FC = () => {
                           GPS Verified
                         </span>
 
-                        <p className="text-[11px] text-emerald-600 mt-1 leading-relaxed">
-                          This marker represents the actual device location captured during complaint submission.
+                        <p className="text-[11px] text-emerald-600 mt-1">
+                          Actual device location captured during complaint submission.
                         </p>
 
                       </div>
@@ -744,21 +711,13 @@ export const ComplaintDetailsPage: React.FC = () => {
 
             ) : (
 
-              <div className="p-6 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] flex items-center gap-3">
+              <div className="p-6 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
                 <MapPin className="w-5 h-5 text-gray-400" />
 
-                <div>
-
-                  <p className="text-xs font-bold text-[#6B7280]">
-                    GPS location unavailable
-                  </p>
-
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    The citizen did not provide device location permission when submitting this complaint.
-                  </p>
-
-                </div>
+                <p className="text-xs font-bold text-[#6B7280] mt-2">
+                  GPS location unavailable
+                </p>
 
               </div>
 
@@ -766,53 +725,44 @@ export const ComplaintDetailsPage: React.FC = () => {
 
           </div>
 
-          {/* =====================================================
-              FEEDBACK
-              ===================================================== */}
+          {/* FEEDBACK */}
 
-          {complaint.status ===
-            'Resolved' && (
+          {complaint.status === 'Resolved' && (
 
-            <div className="bg-white rounded-2xl border border-emerald-200 p-6 space-y-4 shadow-xs">
+            <div className="bg-white rounded-2xl border border-emerald-200 p-6 space-y-4">
 
               <h3 className="text-sm font-extrabold text-emerald-800 flex items-center gap-2">
 
                 <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
 
-                Resolution Quality &amp; Department Rating
+                Resolution Quality & Department Rating
 
               </h3>
 
               {complaint.feedback_rating ? (
 
-                <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 text-xs space-y-1">
+                <div className="p-4 rounded-xl bg-emerald-50/50">
 
-                  <span className="text-[#6B7280] font-medium block">
+                  <span className="text-xs text-[#6B7280]">
                     Your Rating:
                   </span>
 
-                  <div className="flex items-center gap-1 text-amber-500 text-base font-extrabold">
+                  <div className="text-amber-500 text-base font-extrabold">
 
                     {'★'.repeat(
                       complaint.feedback_rating
                     )}
 
                     <span className="text-xs text-[#1F2937] ml-1">
-
-                      (
-                      {complaint.feedback_rating}
-                      /5)
-
+                      ({complaint.feedback_rating}/5)
                     </span>
 
                   </div>
 
                   {complaint.feedback_comment && (
 
-                    <p className="text-[#1F2937] italic mt-2 text-xs">
-
+                    <p className="text-xs italic mt-2">
                       "{complaint.feedback_comment}"
-
                     </p>
 
                   )}
@@ -830,11 +780,11 @@ export const ComplaintDetailsPage: React.FC = () => {
 
                   <div>
 
-                    <label className="block text-xs font-bold text-[#6B7280] mb-2">
+                    <label className="block text-xs font-bold mb-2">
                       Rating (1 to 5 Stars)
                     </label>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex gap-2">
 
                       {[1, 2, 3, 4, 5].map(
                         (s) => (
@@ -845,10 +795,10 @@ export const ComplaintDetailsPage: React.FC = () => {
                             onClick={() =>
                               setRating(s)
                             }
-                            className={`w-10 h-10 rounded-xl text-sm font-extrabold transition-all ${
+                            className={`w-10 h-10 rounded-xl ${
                               rating >= s
-                                ? 'bg-amber-400 text-white shadow-xs scale-105'
-                                : 'bg-[#F3F4F6] text-gray-400 hover:bg-gray-200'
+                                ? 'bg-amber-400 text-white'
+                                : 'bg-[#F3F4F6] text-gray-400'
                             }`}
                           >
                             ★
@@ -861,36 +811,28 @@ export const ComplaintDetailsPage: React.FC = () => {
 
                   </div>
 
-                  <div>
-
-                    <textarea
-                      rows={3}
-                      value={
-                        feedbackComment
-                      }
-                      onChange={(e) =>
-                        setFeedbackComment(
-                          e.target.value
-                        )
-                      }
-                      placeholder="Leave feedback on department responsiveness..."
-                      className="w-full p-3 rounded-xl border border-[#E5E7EB] text-xs text-[#1F2937] focus:outline-none focus:ring-1 focus:ring-[#5E4075]"
-                    />
-
-                  </div>
+                  <textarea
+                    rows={3}
+                    value={
+                      feedbackComment
+                    }
+                    onChange={(e) =>
+                      setFeedbackComment(
+                        e.target.value
+                      )
+                    }
+                    placeholder="Leave feedback..."
+                    className="w-full p-3 rounded-xl border border-[#E5E7EB] text-xs"
+                  />
 
                   <button
                     type="submit"
-                    disabled={
-                      submittingFeedback
-                    }
-                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition-colors"
+                    disabled={submittingFeedback}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs"
                   >
-
                     {submittingFeedback
                       ? 'Submitting...'
                       : 'Submit Feedback'}
-
                   </button>
 
                 </form>
@@ -901,15 +843,13 @@ export const ComplaintDetailsPage: React.FC = () => {
 
           )}
 
-          {/* =====================================================
-              AUDIO + SENTIMENT
-              ===================================================== */}
+          {/* AUDIO + SENTIMENT */}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4 shadow-xs">
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4">
 
-              <h3 className="text-xs font-extrabold text-[#6B7280] uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-extrabold uppercase flex items-center gap-2">
 
                 <FileText className="w-4 h-4 text-[#5E4075]" />
 
@@ -926,79 +866,40 @@ export const ComplaintDetailsPage: React.FC = () => {
                       !isPlaying
                     )
                   }
-                  className="w-10 h-10 rounded-xl bg-[#5E4075] hover:bg-[#4C3360] text-white flex items-center justify-center shadow-xs shrink-0 transition-colors"
+                  className="w-10 h-10 rounded-xl bg-[#5E4075] text-white flex items-center justify-center"
                 >
 
                   {isPlaying ? (
                     <Pause className="w-4 h-4" />
                   ) : (
-                    <Play className="w-4 h-4 ml-0.5" />
+                    <Play className="w-4 h-4" />
                   )}
 
                 </button>
-
-                <div className="flex-1 h-8 flex items-center gap-1 px-2">
-
-                  {[
-                    40,
-                    70,
-                    30,
-                    85,
-                    100,
-                    45,
-                    90,
-                    60,
-                    35,
-                    75,
-                    95,
-                    50,
-                    80
-                  ].map(
-                    (h, i) => (
-
-                      <div
-                        key={i}
-                        className={`w-1 rounded-full transition-all ${
-                          isPlaying
-                            ? 'bg-[#5E4075] animate-pulse'
-                            : 'bg-gray-300'
-                        }`}
-                        style={{
-                          height:
-                            `${h * 0.6}%`
-                        }}
-                      />
-
-                    )
-                  )}
-
-                </div>
 
               </div>
 
             </div>
 
-            {/* AI SENTIMENT */}
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4">
 
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-4 shadow-xs">
-
-              <h3 className="text-xs font-extrabold text-[#6B7280] uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-extrabold uppercase flex items-center gap-2">
 
                 <Sparkles className="w-4 h-4 text-[#5E4075]" />
 
-                AI Emotion &amp; Sentiment
+                AI Emotion & Sentiment
 
               </h3>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
 
                 <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
-                  <span className="text-[#6B7280] font-medium block mb-1">
+                  <span className="text-[#6B7280] text-xs block mb-1">
                     Emotion
                   </span>
 
-                  <strong className="text-[#5E4075] text-sm font-extrabold">
+                  <strong className="text-[#5E4075]">
                     {complaint.emotion}
                   </strong>
 
@@ -1006,11 +907,11 @@ export const ComplaintDetailsPage: React.FC = () => {
 
                 <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
 
-                  <span className="text-[#6B7280] font-medium block mb-1">
+                  <span className="text-[#6B7280] text-xs block mb-1">
                     AI Confidence
                   </span>
 
-                  <strong className="text-emerald-600 text-sm font-extrabold">
+                  <strong className="text-emerald-600">
                     {complaint.confidence}%
                   </strong>
 
@@ -1022,20 +923,16 @@ export const ComplaintDetailsPage: React.FC = () => {
 
           </div>
 
-          {/* =====================================================
-              TRANSCRIPT
-              ===================================================== */}
+          {/* TRANSCRIPT */}
 
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 space-y-3 shadow-xs">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6">
 
-            <h3 className="text-xs font-extrabold text-[#6B7280] uppercase tracking-wider">
+            <h3 className="text-xs font-extrabold uppercase text-[#6B7280] mb-3">
               Speech-to-Text Verbatim Transcript
             </h3>
 
-            <p className="text-[#1F2937] text-xs font-mono leading-relaxed bg-[#F8FAFC] p-4 rounded-xl border border-[#E5E7EB]">
-
+            <p className="text-xs font-mono bg-[#F8FAFC] p-4 rounded-xl">
               "{complaint.transcript}"
-
             </p>
 
           </div>

@@ -46,7 +46,7 @@ export const OfficerAnalysis: React.FC = () => {
 
   // Filter complaints by officer's department
   const deptComplaints = complaints.filter((c) => {
-    return !user?.department || c.department_name === user.department || c.category === user.department;
+    return !user?.departmentId || c.department_name === user.departmentId || c.category === user.departmentId;
   });
 
   // Calculate Metrics
@@ -54,7 +54,7 @@ export const OfficerAnalysis: React.FC = () => {
   const pendingCount = deptComplaints.filter((c) => c.status === 'Pending').length;
   const inProgressCount = deptComplaints.filter((c) => c.status === 'In Progress' || c.status === 'Assigned').length;
   const completedCount = deptComplaints.filter((c) => c.status === 'Resolved').length;
-  const emergencyCount = deptComplaints.filter((c) => c.priority === 'Emergency' || c.priority === 'Critical').length;
+  const emergencyCount = deptComplaints.filter((c) => c.priority === 'High').length;
 
   const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -110,7 +110,7 @@ export const OfficerAnalysis: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <h4 className="text-xs font-bold text-white truncate">{user?.fullName || 'Ganga'}</h4>
-            <p className="text-[10px] text-white/70 truncate">{user?.department || 'Department Officer'}</p>
+            <p className="text-[10px] text-white/70 truncate">{user?.departmentId || 'Department Officer'}</p>
           </div>
         </div>
       </aside>

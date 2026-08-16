@@ -18,6 +18,7 @@ export class ComplaintController {
     req: AuthenticatedRequest,
     res: Response
   ) {
+
     try {
 
       const {
@@ -112,8 +113,10 @@ export class ComplaintController {
 
       return res.json({
         success: true,
+
         message:
           'Community endorsement added ("I\'m Affected")',
+
         complaint:
           updated
       });
@@ -154,8 +157,7 @@ export class ComplaintController {
       } = req.body;
 
       if (
-        typeof rating !==
-          'number' ||
+        typeof rating !== 'number' ||
         rating < 1 ||
         rating > 5
       ) {
@@ -185,8 +187,10 @@ export class ComplaintController {
 
       return res.json({
         success: true,
+
         message:
           'Feedback submitted successfully. Department score updated!',
+
         complaint:
           updated
       });
@@ -208,7 +212,7 @@ export class ComplaintController {
   }
 
   // =========================================================
-  // CREATE COMPLAINT
+  // CREATE OR MERGE COMPLAINT
   // =========================================================
 
   static async createComplaint(
@@ -299,16 +303,17 @@ export class ComplaintController {
         {
           latitude:
             validLatitude,
+
           longitude:
             validLongitude
         }
       );
 
       // =====================================================
-      // CREATE COMPLAINT
+      // CREATE / MERGE
       // =====================================================
 
-      const complaint =
+      const result =
         await ComplaintService.createComplaint({
           citizenId:
             req.user?.userId ||
@@ -340,10 +345,22 @@ export class ComplaintController {
         });
 
       return res.status(201).json({
+
         success: true,
+
+        merged:
+          result.merged,
+
+        similarity:
+          result.similarity,
+
         message:
-          'Complaint registered successfully',
-        complaint
+          result.merged
+            ? 'Complaint matched an existing community issue and was merged.'
+            : 'Complaint registered successfully.',
+
+        complaint:
+          result.complaint
       });
 
     } catch (err: any) {
@@ -381,30 +398,24 @@ export class ComplaintController {
         search
       } = req.query;
 
-      // =====================================================
-      // ROLE-BASED FILTERING
-      // =====================================================
-
       let citizenId:
         string | undefined;
 
       let officerDepartmentId:
         string | undefined;
 
-      // Citizen
+      // CITIZEN
       if (
-        req.user?.role ===
-        'CITIZEN'
+        req.user?.role === 'CITIZEN'
       ) {
 
         citizenId =
           req.user.userId;
       }
 
-      // Officer
+      // OFFICER
       if (
-        req.user?.role ===
-        'OFFICER'
+        req.user?.role === 'OFFICER'
       ) {
 
         officerDepartmentId =
@@ -421,19 +432,11 @@ export class ComplaintController {
               'Officer is not assigned to a department'
           });
         }
-
-        console.log(
-          '[ComplaintController] Officer department:',
-          officerDepartmentId
-        );
       }
-
-      // =====================================================
-      // GET DATA
-      // =====================================================
 
       const complaints =
         await ComplaintService.getComplaints({
+
           category:
             category as string,
 
@@ -456,8 +459,10 @@ export class ComplaintController {
 
       return res.json({
         success: true,
+
         count:
           complaints.length,
+
         complaints
       });
 
@@ -505,9 +510,7 @@ export class ComplaintController {
         });
       }
 
-      // =====================================================
       // OFFICER ACCESS CONTROL
-      // =====================================================
 
       if (
         req.user?.role ===
@@ -538,9 +541,7 @@ export class ComplaintController {
         }
       }
 
-      // =====================================================
       // CITIZEN ACCESS CONTROL
-      // =====================================================
 
       if (
         req.user?.role ===
@@ -611,10 +612,6 @@ export class ComplaintController {
         });
       }
 
-      // =====================================================
-      // CHECK DEPARTMENT ACCESS
-      // =====================================================
-
       const existing =
         await ComplaintService.getComplaintById(
           id
@@ -666,19 +663,12 @@ export class ComplaintController {
           req.user?.fullName
         );
 
-      if (!updated) {
-
-        return res.status(404).json({
-          success: false,
-          message:
-            'Complaint not found'
-        });
-      }
-
       return res.json({
         success: true,
+
         message:
           `Complaint status updated to ${status}`,
+
         complaint:
           updated
       });
@@ -724,10 +714,6 @@ export class ComplaintController {
             'Note text is required'
         });
       }
-
-      // =====================================================
-      // CHECK DEPARTMENT ACCESS FOR OFFICER
-      // =====================================================
 
       const complaint =
         await ComplaintService.getComplaintById(
@@ -785,19 +771,9 @@ export class ComplaintController {
           note
         );
 
-      if (!newNote) {
-
-        return res.status(404).json({
-          success: false,
-          message:
-            'Complaint not found'
-        });
-      }
-
       return res.status(201).json({
         success: true,
-        note:
-          newNote
+        note: newNote
       });
 
     } catch (err: any) {

@@ -53,14 +53,11 @@ export interface ComplaintRecord {
   assigned_officer_id?: string | null;
   assigned_officer_name?: string | null;
 
-  // Complaint/problem location
   location: string;
 
-  // GPS coordinates captured during complaint submission
   latitude: number | null;
   longitude: number | null;
 
-  // Human-readable GPS location
   gps_address?: string | null;
 
   duplicate_probability: number;
@@ -70,12 +67,10 @@ export interface ComplaintRecord {
   keywords: string[];
   estimated_resolution: string;
 
-  // Community impact
   affected_citizens_count: number;
   affected_user_ids: string[];
   is_escalated: boolean;
 
-  // Feedback
   feedback_rating?: number | null;
   feedback_comment?: string | null;
 
@@ -228,8 +223,8 @@ class InMemoryStore {
 
       location: '45 Park Avenue, Ward 12',
 
-      latitude: 40.7128,
-      longitude: -74.006,
+      latitude: 13.362298,
+      longitude: 80.144814,
 
       gps_address: '45 Park Avenue, Ward 12',
 
@@ -293,10 +288,11 @@ class InMemoryStore {
 
       location: 'Sector 4 Market Road Crossing',
 
-      latitude: 40.7282,
-      longitude: -73.9942,
+      latitude: 13.0827,
+      longitude: 80.2707,
 
-      gps_address: 'Sector 4 Market Road Crossing',
+      gps_address:
+        'Sector 4 Market Road Crossing',
 
       duplicate_probability: 32.0,
       possible_duplicate_id: null,
@@ -358,8 +354,8 @@ class InMemoryStore {
 
       location: '8th Cross Road, Ward 7',
 
-      latitude: 40.735,
-      longitude: -74.012,
+      latitude: 13.0827,
+      longitude: 80.2707,
 
       gps_address: '8th Cross Road, Ward 7',
 
@@ -423,8 +419,8 @@ class InMemoryStore {
 
       location: 'Main Flyover Ramp, Exit 2',
 
-      latitude: 40.705,
-      longitude: -74.018,
+      latitude: 13.0827,
+      longitude: 80.2707,
 
       gps_address: 'Main Flyover Ramp, Exit 2',
 
@@ -483,10 +479,7 @@ class InMemoryStore {
   logs: any[] = [
     {
       id: 'log-1',
-
-      user_name:
-        'Chief Admin Alex Vance',
-
+      user_name: 'Chief Admin Alex Vance',
       action: 'SYSTEM_BOOT',
 
       details: {
@@ -495,9 +488,7 @@ class InMemoryStore {
       },
 
       ip_address: '127.0.0.1',
-
-      created_at:
-        new Date().toISOString()
+      created_at: new Date().toISOString()
     }
   ];
 }
@@ -508,16 +499,13 @@ export const store =
 export class ComplaintService {
 
   // =========================================================
-  // GPS DISTANCE HELPERS
+  // GPS HELPERS
   // =========================================================
 
   private static toRadians(
     degrees: number
   ): number {
-    return (
-      degrees *
-      (Math.PI / 180)
-    );
+    return degrees * (Math.PI / 180);
   }
 
   private static calculateDistanceKm(
@@ -527,18 +515,15 @@ export class ComplaintService {
     lon2: number
   ): number {
 
-    const earthRadiusKm =
-      6371;
+    const earthRadiusKm = 6371;
 
-    const dLat =
-      this.toRadians(
-        lat2 - lat1
-      );
+    const dLat = this.toRadians(
+      lat2 - lat1
+    );
 
-    const dLon =
-      this.toRadians(
-        lon2 - lon1
-      );
+    const dLon = this.toRadians(
+      lon2 - lon1
+    );
 
     const a =
       Math.sin(dLat / 2) *
@@ -559,10 +544,7 @@ export class ComplaintService {
         Math.sqrt(1 - a)
       );
 
-    return (
-      earthRadiusKm *
-      c
-    );
+    return earthRadiusKm * c;
   }
 
   // =========================================================
@@ -576,14 +558,6 @@ export class ComplaintService {
 
     try {
 
-      console.log(
-        '[GPS] Converting coordinates to location:',
-        {
-          latitude,
-          longitude
-        }
-      );
-
       const response =
         await axios.get(
           'https://nominatim.openstreetmap.org/reverse',
@@ -594,8 +568,7 @@ export class ComplaintService {
               format: 'jsonv2',
               addressdetails: 1,
               zoom: 18,
-              'accept-language':
-                'en'
+              'accept-language': 'en'
             },
 
             headers: {
@@ -614,18 +587,8 @@ export class ComplaintService {
         typeof address === 'string' &&
         address.trim()
       ) {
-
-        console.log(
-          '[GPS] Location identified:',
-          address
-        );
-
         return address.trim();
       }
-
-      console.warn(
-        '[GPS] Reverse geocoding returned no address.'
-      );
 
       return null;
 
@@ -642,7 +605,49 @@ export class ComplaintService {
   }
 
   // =========================================================
-  // SIMILAR COMPLAINT CHECK
+  // TEXT NORMALIZATION
+  // =========================================================
+
+  private static getMeaningfulWords(
+    text: string
+  ): string[] {
+
+    const stopWords = new Set([
+      'this',
+      'that',
+      'there',
+      'their',
+      'about',
+      'with',
+      'from',
+      'have',
+      'been',
+      'they',
+      'were',
+      'what',
+      'when',
+      'where',
+      'which',
+      'please',
+      'hello',
+      'problem',
+      'area',
+      'issue'
+    ]);
+
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(
+        (word) =>
+          word.length >= 4 &&
+          !stopWords.has(word)
+      );
+  }
+
+  // =========================================================
+  // SIMILAR COMPLAINT DETECTION
   // =========================================================
 
   static async findSimilarComplaint(
@@ -656,23 +661,29 @@ export class ComplaintService {
     const activeComplaints =
       store.complaints.filter(
         (complaint) =>
-          complaint.status !==
-            'Resolved' &&
-          complaint.status !==
-            'Rejected'
+          complaint.status !== 'Resolved' &&
+          complaint.status !== 'Rejected'
       );
 
     let bestMatch:
-      ComplaintRecord | null =
-      null;
+      ComplaintRecord | null = null;
 
-    let maxSimilarity = 0;
+    let bestScore = 0;
 
-    const lowerTranscript =
-      transcript.toLowerCase();
+    const currentWords =
+      this.getMeaningfulWords(
+        transcript
+      );
 
-    const lowerLocation =
-      (location || '').toLowerCase();
+    const normalizedCategory =
+      category
+        .toLowerCase()
+        .trim();
+
+    const normalizedLocation =
+      (location || '')
+        .toLowerCase()
+        .trim();
 
     for (
       const complaint of activeComplaints
@@ -680,28 +691,26 @@ export class ComplaintService {
 
       let score = 0;
 
-      // Category match
-      if (
-        complaint.category.toLowerCase() ===
-        category.toLowerCase()
-      ) {
+      // -----------------------------------------------------
+      // 1. CATEGORY MATCH
+      // -----------------------------------------------------
+
+      const sameCategory =
+        complaint.category
+          .toLowerCase()
+          .trim() ===
+        normalizedCategory;
+
+      if (sameCategory) {
         score += 35;
       }
 
-      // Location text match
-      if (
-        location &&
-        lowerLocation !== 'not specified' &&
-        complaint.location
-          .toLowerCase()
-          .includes(
-            lowerLocation
-          )
-      ) {
-        score += 40;
-      }
+      // -----------------------------------------------------
+      // 2. GPS PROXIMITY
+      // -----------------------------------------------------
 
-      // GPS proximity match
+      let gpsClose = false;
+
       if (
         typeof latitude === 'number' &&
         typeof longitude === 'number' &&
@@ -717,11 +726,25 @@ export class ComplaintService {
             complaint.longitude
           );
 
+        console.log(
+          '[DuplicateDetection] GPS comparison:',
+          {
+            newComplaint:
+              `${latitude}, ${longitude}`,
+
+            existingComplaint:
+              complaint.tracking_number,
+
+            distanceKm
+          }
+        );
+
         if (
           distanceKm <= 0.5
         ) {
 
-          score += 20;
+          score += 25;
+          gpsClose = true;
 
         } else if (
           distanceKm <= 1.5
@@ -731,53 +754,149 @@ export class ComplaintService {
         }
       }
 
-      // Text overlap
-      const words =
-        lowerTranscript
-          .split(/\s+/)
-          .filter(
-            (word) =>
-              word.length > 3
-          );
+      // -----------------------------------------------------
+      // 3. LOCATION TEXT MATCH
+      // -----------------------------------------------------
 
-      let matchCount = 0;
+      let textLocationMatch = false;
 
-      for (
-        const word of words
+      if (
+        normalizedLocation &&
+        normalizedLocation !==
+          'not specified'
       ) {
 
+        const existingLocation =
+          complaint.location
+            .toLowerCase()
+            .trim();
+
         if (
-          complaint.summary
-            .toLowerCase()
-            .includes(word) ||
-          complaint.transcript
-            .toLowerCase()
-            .includes(word)
+          existingLocation ===
+            normalizedLocation ||
+          existingLocation.includes(
+            normalizedLocation
+          ) ||
+          normalizedLocation.includes(
+            existingLocation
+          )
         ) {
-          matchCount++;
+
+          score += 20;
+          textLocationMatch = true;
         }
       }
 
-      if (
-        words.length > 0
+      // -----------------------------------------------------
+      // 4. TEXT SIMILARITY
+      // -----------------------------------------------------
+
+      const existingWords =
+        this.getMeaningfulWords(
+          complaint.transcript +
+            ' ' +
+            complaint.summary
+        );
+
+      const uniqueCurrentWords =
+        [...new Set(currentWords)];
+
+      let matchedWords = 0;
+
+      for (
+        const word of uniqueCurrentWords
       ) {
 
-        score += Math.min(
-          25,
-          Math.round(
-            (matchCount /
-              words.length) *
-              40
+        if (
+          existingWords.includes(
+            word
           )
-        );
+        ) {
+          matchedWords++;
+        }
       }
 
+      const textSimilarity =
+        uniqueCurrentWords.length > 0
+          ? matchedWords /
+            uniqueCurrentWords.length
+          : 0;
+
+      const textScore =
+        Math.min(
+          20,
+          Math.round(
+            textSimilarity * 40
+          )
+        );
+
+      score += textScore;
+
+      // -----------------------------------------------------
+      // 5. SAFETY RULE
+      // -----------------------------------------------------
+      //
+      // A duplicate should normally require:
+      //
+      // Same category
+      // AND
+      // Same/nearby GPS
+      // AND meaningful text similarity
+      //
+      // OR
+      //
+      // Same category
+      // AND exact/similar location text
+      // AND text similarity
+      //
+      // -----------------------------------------------------
+
+      const strongGpsDuplicate =
+        sameCategory &&
+        gpsClose &&
+        textSimilarity >= 0.15;
+
+      const strongLocationDuplicate =
+        sameCategory &&
+        textLocationMatch &&
+        textSimilarity >= 0.15;
+
+      const finalDuplicate =
+        strongGpsDuplicate ||
+        strongLocationDuplicate;
+
+      console.log(
+        '[DuplicateDetection] Candidate:',
+        {
+          trackingNumber:
+            complaint.tracking_number,
+
+          categoryMatch:
+            sameCategory,
+
+          gpsClose,
+
+          locationMatch:
+            textLocationMatch,
+
+          textSimilarity:
+            Math.round(
+              textSimilarity * 100
+            ),
+
+          score,
+
+          duplicate:
+            finalDuplicate
+        }
+      );
+
       if (
-        score >
-        maxSimilarity
+        finalDuplicate &&
+        score > bestScore
       ) {
 
-        maxSimilarity =
+        bestScore =
           score;
 
         bestMatch =
@@ -786,14 +905,24 @@ export class ComplaintService {
     }
 
     if (
-      maxSimilarity >= 65 &&
-      bestMatch
+      bestMatch &&
+      bestScore >= 60
     ) {
+
+      console.log(
+        '[DuplicateDetection] DUPLICATE FOUND:',
+        {
+          trackingNumber:
+            bestMatch.tracking_number,
+
+          score:
+            bestScore
+        }
+      );
 
       return {
         found: true,
-        similarity:
-          maxSimilarity,
+        similarity: bestScore,
         similarComplaint:
           bestMatch
       };
@@ -801,15 +930,13 @@ export class ComplaintService {
 
     return {
       found: false,
-      similarity:
-        maxSimilarity,
-      similarComplaint:
-        null
+      similarity: bestScore,
+      similarComplaint: null
     };
   }
 
   // =========================================================
-  // I'M AFFECTED
+  // ENDORSE / I'M AFFECTED
   // =========================================================
 
   static async endorseComplaint(
@@ -821,8 +948,7 @@ export class ComplaintService {
     const complaint =
       store.complaints.find(
         (item) =>
-          item.id ===
-            complaintId ||
+          item.id === complaintId ||
           item.tracking_number ===
             complaintId
       );
@@ -848,32 +974,9 @@ export class ComplaintService {
     complaint.updated_at =
       new Date().toISOString();
 
-    if (
-      complaint.affected_citizens_count >=
-        20 &&
-      complaint.priority !==
-        'Emergency'
-    ) {
-
-      complaint.priority =
-        'Emergency';
-
-      complaint.is_escalated =
-        true;
-
-    } else if (
-      complaint.affected_citizens_count >=
-        10 &&
-      complaint.priority ===
-        'Low'
-    ) {
-
-      complaint.priority =
-        'High';
-
-      complaint.is_escalated =
-        true;
-    }
+    this.applyCommunityEscalation(
+      complaint
+    );
 
     store.logs.unshift({
       id:
@@ -908,6 +1011,42 @@ export class ComplaintService {
   }
 
   // =========================================================
+  // COMMUNITY ESCALATION
+  // =========================================================
+
+  private static applyCommunityEscalation(
+    complaint: ComplaintRecord
+  ) {
+
+    if (
+      complaint.affected_citizens_count >=
+        20 &&
+      complaint.priority !==
+        'Emergency'
+    ) {
+
+      complaint.priority =
+        'Emergency';
+
+      complaint.is_escalated =
+        true;
+
+    } else if (
+      complaint.affected_citizens_count >=
+        10 &&
+      complaint.priority ===
+        'Low'
+    ) {
+
+      complaint.priority =
+        'High';
+
+      complaint.is_escalated =
+        true;
+    }
+  }
+
+  // =========================================================
   // FEEDBACK
   // =========================================================
 
@@ -920,8 +1059,7 @@ export class ComplaintService {
     const complaint =
       store.complaints.find(
         (item) =>
-          item.id ===
-            complaintId ||
+          item.id === complaintId ||
           item.tracking_number ===
             complaintId
       );
@@ -950,86 +1088,82 @@ export class ComplaintService {
     Promise<DepartmentScoreboardItem[]> {
 
     const list:
-      DepartmentScoreboardItem[] =
-      [
-        {
-          rank: 1,
-          id: 'dept-elec',
-          name:
-            'Electricity Board',
-          code: 'ELEC',
-          citizenRating: 4.7,
-          avgResolutionHours: 2.8,
-          slaCompliancePercent: 96.2,
-          resolutionRatePercent: 94.5,
-          reopenRatePercent: 2.1,
-          overallScore: 93,
-          totalComplaints: 284,
-          resolvedComplaints: 268
-        },
+      DepartmentScoreboardItem[] = [
+      {
+        rank: 1,
+        id: 'dept-elec',
+        name: 'Electricity Board',
+        code: 'ELEC',
+        citizenRating: 4.7,
+        avgResolutionHours: 2.8,
+        slaCompliancePercent: 96.2,
+        resolutionRatePercent: 94.5,
+        reopenRatePercent: 2.1,
+        overallScore: 93,
+        totalComplaints: 284,
+        resolvedComplaints: 268
+      },
 
-        {
-          rank: 2,
-          id: 'dept-water',
-          name: 'Water Board',
-          code: 'WATER',
-          citizenRating: 4.5,
-          avgResolutionHours: 3.5,
-          slaCompliancePercent: 91.8,
-          resolutionRatePercent: 92.0,
-          reopenRatePercent: 3.4,
-          overallScore: 89,
-          totalComplaints: 342,
-          resolvedComplaints: 315
-        },
+      {
+        rank: 2,
+        id: 'dept-water',
+        name: 'Water Board',
+        code: 'WATER',
+        citizenRating: 4.5,
+        avgResolutionHours: 3.5,
+        slaCompliancePercent: 91.8,
+        resolutionRatePercent: 92.0,
+        reopenRatePercent: 3.4,
+        overallScore: 89,
+        totalComplaints: 342,
+        resolvedComplaints: 315
+      },
 
-        {
-          rank: 3,
-          id: 'dept-pwd',
-          name: 'Public Works',
-          code: 'PWD',
-          citizenRating: 4.2,
-          avgResolutionHours: 5.2,
-          slaCompliancePercent: 86.4,
-          resolutionRatePercent: 88.0,
-          reopenRatePercent: 4.8,
-          overallScore: 84,
-          totalComplaints: 198,
-          resolvedComplaints: 174
-        },
+      {
+        rank: 3,
+        id: 'dept-pwd',
+        name: 'Public Works',
+        code: 'PWD',
+        citizenRating: 4.2,
+        avgResolutionHours: 5.2,
+        slaCompliancePercent: 86.4,
+        resolutionRatePercent: 88.0,
+        reopenRatePercent: 4.8,
+        overallScore: 84,
+        totalComplaints: 198,
+        resolvedComplaints: 174
+      },
 
-        {
-          rank: 4,
-          id: 'dept-muni',
-          name:
-            'Municipality Sanitation',
-          code: 'MUNI',
-          citizenRating: 4.0,
-          avgResolutionHours: 6.8,
-          slaCompliancePercent: 82.5,
-          resolutionRatePercent: 85.2,
-          reopenRatePercent: 5.6,
-          overallScore: 80,
-          totalComplaints: 410,
-          resolvedComplaints: 349
-        },
+      {
+        rank: 4,
+        id: 'dept-muni',
+        name: 'Municipality Sanitation',
+        code: 'MUNI',
+        citizenRating: 4.0,
+        avgResolutionHours: 6.8,
+        slaCompliancePercent: 82.5,
+        resolutionRatePercent: 85.2,
+        reopenRatePercent: 5.6,
+        overallScore: 80,
+        totalComplaints: 410,
+        resolvedComplaints: 349
+      },
 
-        {
-          rank: 5,
-          id: 'dept-police',
-          name:
-            'Police Civic Wing',
-          code: 'POLICE',
-          citizenRating: 4.3,
-          avgResolutionHours: 1.5,
-          slaCompliancePercent: 94.0,
-          resolutionRatePercent: 90.1,
-          reopenRatePercent: 2.9,
-          overallScore: 88,
-          totalComplaints: 156,
-          resolvedComplaints: 141
-        }
-      ];
+      {
+        rank: 5,
+        id: 'dept-police',
+        name: 'Police Civic Wing',
+        code: 'POLICE',
+        citizenRating: 4.3,
+        avgResolutionHours: 1.5,
+        slaCompliancePercent: 94.0,
+        resolutionRatePercent: 90.1,
+        reopenRatePercent: 2.9,
+        overallScore: 88,
+        totalComplaints: 156,
+        resolvedComplaints: 141
+      }
+    ];
 
     return list
       .sort(
@@ -1040,14 +1174,13 @@ export class ComplaintService {
       .map(
         (item, index) => ({
           ...item,
-          rank:
-            index + 1
+          rank: index + 1
         })
       );
   }
 
   // =========================================================
-  // CREATE COMPLAINT
+  // CREATE OR MERGE COMPLAINT
   // =========================================================
 
   static async createComplaint(
@@ -1060,21 +1193,159 @@ export class ComplaintService {
 
       transcript: string;
 
-      analysis:
-        AIAnalysisResult;
+      analysis: AIAnalysisResult;
 
       customLocation?: string;
 
       latitude?: number | null;
       longitude?: number | null;
     }
-  ): Promise<ComplaintRecord> {
+  ): Promise<{
+    complaint: ComplaintRecord;
+    merged: boolean;
+    similarity: number;
+  }> {
+
+    const lat =
+      typeof data.latitude === 'number'
+        ? data.latitude
+        : null;
+
+    const lng =
+      typeof data.longitude === 'number'
+        ? data.longitude
+        : null;
+
+    console.log(
+      '[ComplaintService] Incoming GPS:',
+      {
+        latitude: lat,
+        longitude: lng
+      }
+    );
+
+    // =======================================================
+    // DUPLICATE CHECK
+    // =======================================================
+
+    const duplicateResult =
+      await this.findSimilarComplaint(
+        data.transcript,
+        data.analysis.category,
+        data.customLocation ||
+          data.analysis.location,
+        lat,
+        lng
+      );
+
+    // =======================================================
+    // MERGE EXISTING COMPLAINT
+    // =======================================================
+
+    if (
+      duplicateResult.found &&
+      duplicateResult.similarComplaint
+    ) {
+
+      const existingComplaint =
+        duplicateResult.similarComplaint;
+
+      console.log(
+        '[ComplaintService] MERGING INTO EXISTING COMPLAINT:',
+        existingComplaint.tracking_number
+      );
+
+      // Prevent double-counting same citizen
+      if (
+        !existingComplaint.affected_user_ids.includes(
+          data.citizenId
+        )
+      ) {
+
+        existingComplaint.affected_user_ids.push(
+          data.citizenId
+        );
+
+        existingComplaint.affected_citizens_count +=
+          1;
+      }
+
+      existingComplaint.updated_at =
+        new Date().toISOString();
+
+      // Keep duplicate probability updated
+      existingComplaint.duplicate_probability =
+        Math.max(
+          existingComplaint.duplicate_probability,
+          duplicateResult.similarity
+        );
+
+      existingComplaint.possible_duplicate_id =
+        null;
+
+      // Community impact escalation
+      this.applyCommunityEscalation(
+        existingComplaint
+      );
+
+      // Log merge
+      store.logs.unshift({
+        id:
+          `log-${Date.now()}`,
+
+        user_name:
+          data.citizenName ||
+          'Citizen User',
+
+        action:
+          'COMPLAINT_MERGED',
+
+        details: {
+          existingTrackingNumber:
+            existingComplaint.tracking_number,
+
+          similarity:
+            duplicateResult.similarity,
+
+          affectedCitizensCount:
+            existingComplaint.affected_citizens_count,
+
+          category:
+            existingComplaint.category,
+
+          latitude:
+            lat,
+
+          longitude:
+            lng
+        },
+
+        ip_address:
+          '127.0.0.1',
+
+        created_at:
+          new Date().toISOString()
+      });
+
+      return {
+        complaint:
+          existingComplaint,
+
+        merged: true,
+
+        similarity:
+          duplicateResult.similarity
+      };
+    }
+
+    // =======================================================
+    // NEW COMPLAINT
+    // =======================================================
 
     const trackingNumber =
       `CC-${new Date().getFullYear()}-${Math.floor(
         1000 +
-          Math.random() *
-            9000
+          Math.random() * 9000
       )}`;
 
     const deptMatch =
@@ -1087,31 +1358,7 @@ export class ComplaintService {
       );
 
     // =======================================================
-    // GPS
-    // =======================================================
-
-    const lat =
-      typeof data.latitude ===
-      'number'
-        ? data.latitude
-        : null;
-
-    const lng =
-      typeof data.longitude ===
-      'number'
-        ? data.longitude
-        : null;
-
-    console.log(
-      '[ComplaintService] GPS:',
-      {
-        latitude: lat,
-        longitude: lng
-      }
-    );
-
-    // =======================================================
-    // COMPLAINT LOCATION
+    // HUMAN READABLE LOCATION
     // =======================================================
 
     let complaintLocation =
@@ -1150,13 +1397,8 @@ export class ComplaintService {
         'Not specified';
     }
 
-    console.log(
-      '[ComplaintService] Final complaint location:',
-      complaintLocation
-    );
-
     // =======================================================
-    // NEW COMPLAINT RECORD
+    // CREATE RECORD
     // =======================================================
 
     const newRecord:
@@ -1234,27 +1476,19 @@ export class ComplaintService {
         gpsAddress,
 
       duplicate_probability:
-        data.analysis
-          .duplicateProbability,
+        data.analysis.duplicateProbability,
 
       possible_duplicate_id:
-        data.analysis
-          .duplicateProbability >
-        60
-          ? store.complaints[0]?.id ||
-            null
-          : null,
+        null,
 
       suggested_action:
-        data.analysis
-          .suggestedAction,
+        data.analysis.suggestedAction,
 
       keywords:
         data.analysis.keywords,
 
       estimated_resolution:
-        data.analysis
-          .estimatedResolution,
+        data.analysis.estimatedResolution,
 
       affected_citizens_count:
         1,
@@ -1283,6 +1517,10 @@ export class ComplaintService {
       newRecord
     );
 
+    // =======================================================
+    // LOG
+    // =======================================================
+
     store.logs.unshift({
       id:
         `log-${Date.now()}`,
@@ -1310,10 +1548,7 @@ export class ComplaintService {
           lat,
 
         longitude:
-          lng,
-
-        gpsAddress:
-          gpsAddress
+          lng
       },
 
       ip_address:
@@ -1323,22 +1558,19 @@ export class ComplaintService {
         new Date().toISOString()
     });
 
-    return newRecord;
+    return {
+      complaint:
+        newRecord,
+
+      merged: false,
+
+      similarity:
+        0
+    };
   }
 
   // =========================================================
   // GET COMPLAINTS
-  // =========================================================
-  //
-  // CITIZEN:
-  //   Only own/affected complaints
-  //
-  // OFFICER:
-  //   Only complaints belonging to officer's department
-  //
-  // ADMIN:
-  //   All complaints
-  //
   // =========================================================
 
   static async getComplaints(
@@ -1348,11 +1580,7 @@ export class ComplaintService {
       department?: string;
       status?: string;
       search?: string;
-
-      // Citizen's user ID
       citizenId?: string;
-
-      // Officer's assigned department
       officerDepartmentId?: string;
     }
   ) {
@@ -1360,10 +1588,7 @@ export class ComplaintService {
     let result =
       [...store.complaints];
 
-    // =======================================================
-    // CITIZEN FILTER
-    // =======================================================
-
+    // Citizen
     if (
       filters.citizenId
     ) {
@@ -1379,32 +1604,7 @@ export class ComplaintService {
         );
     }
 
-    // =======================================================
-    // OFFICER DEPARTMENT FILTER
-    // =======================================================
-    //
-    // THIS IS THE IMPORTANT PART.
-    //
-    // Example:
-    //
-    // Officer:
-    // departmentId = dept-water
-    //
-    // Complaint:
-    // department_id = dept-water
-    //
-    // Therefore the complaint is visible.
-    //
-    // Electricity officer:
-    // departmentId = dept-elec
-    //
-    // Water complaint:
-    // department_id = dept-water
-    //
-    // Therefore it is NOT visible.
-    //
-    // =======================================================
-
+    // Officer department
     if (
       filters.officerDepartmentId
     ) {
@@ -1415,23 +1615,9 @@ export class ComplaintService {
             complaint.department_id ===
             filters.officerDepartmentId
         );
-
-      console.log(
-        '[ComplaintService] Officer department filtering:',
-        {
-          departmentId:
-            filters.officerDepartmentId,
-
-          complaintsReturned:
-            result.length
-        }
-      );
     }
 
-    // =======================================================
-    // CATEGORY FILTER
-    // =======================================================
-
+    // Category
     if (
       filters.category &&
       filters.category !== 'All'
@@ -1447,10 +1633,7 @@ export class ComplaintService {
         );
     }
 
-    // =======================================================
-    // PRIORITY FILTER
-    // =======================================================
-
+    // Priority
     if (
       filters.priority &&
       filters.priority !== 'All'
@@ -1466,10 +1649,7 @@ export class ComplaintService {
         );
     }
 
-    // =======================================================
-    // DEPARTMENT FILTER
-    // =======================================================
-
+    // Department
     if (
       filters.department &&
       filters.department !== 'All'
@@ -1487,10 +1667,7 @@ export class ComplaintService {
         );
     }
 
-    // =======================================================
-    // STATUS FILTER
-    // =======================================================
-
+    // Status
     if (
       filters.status &&
       filters.status !== 'All'
@@ -1506,17 +1683,13 @@ export class ComplaintService {
         );
     }
 
-    // =======================================================
-    // SEARCH FILTER
-    // =======================================================
-
+    // Search
     if (
       filters.search
     ) {
 
       const q =
-        filters.search
-          .toLowerCase();
+        filters.search.toLowerCase();
 
       result =
         result.filter(
@@ -1543,7 +1716,7 @@ export class ComplaintService {
   }
 
   // =========================================================
-  // GET COMPLAINT BY ID
+  // GET COMPLAINT
   // =========================================================
 
   static async getComplaintById(
@@ -1554,8 +1727,7 @@ export class ComplaintService {
       store.complaints.find(
         (item) =>
           item.id === id ||
-          item.tracking_number ===
-            id
+          item.tracking_number === id
       );
 
     if (!complaint) {
@@ -1595,8 +1767,7 @@ export class ComplaintService {
       store.complaints.find(
         (item) =>
           item.id === id ||
-          item.tracking_number ===
-            id
+          item.tracking_number === id
       );
 
     if (!complaint) {
@@ -1662,8 +1833,7 @@ export class ComplaintService {
     const complaint =
       store.complaints.find(
         (item) =>
-          item.id ===
-            complaintId ||
+          item.id === complaintId ||
           item.tracking_number ===
             complaintId
       );
@@ -1702,6 +1872,7 @@ export class ComplaintService {
 
     return newNote;
   }
+  
 
   // =========================================================
   // ANALYTICS
@@ -1736,10 +1907,8 @@ export class ComplaintService {
     const pending =
       store.complaints.filter(
         (complaint) =>
-          complaint.status ===
-            'Pending' ||
-          complaint.status ===
-            'In Progress'
+          complaint.status === 'Pending' ||
+          complaint.status === 'In Progress'
       ).length;
 
     const totalAffectedCitizens =
@@ -1756,31 +1925,26 @@ export class ComplaintService {
         value: emergency,
         color: '#ef4444'
       },
-
       {
         name: 'High',
         value: high,
         color: '#f97316'
       },
-
       {
         name: 'Medium',
         value:
           store.complaints.filter(
             (complaint) =>
-              complaint.priority ===
-              'Medium'
+              complaint.priority === 'Medium'
           ).length,
         color: '#eab308'
       },
-
       {
         name: 'Low',
         value:
           store.complaints.filter(
             (complaint) =>
-              complaint.priority ===
-              'Low'
+              complaint.priority === 'Low'
           ).length,
         color: '#3b82f6'
       }
@@ -1816,76 +1980,25 @@ export class ComplaintService {
       );
 
     const monthlyTrends = [
-      {
-        month: 'Jan',
-        emergency: 12,
-        total: 140
-      },
-
-      {
-        month: 'Feb',
-        emergency: 18,
-        total: 165
-      },
-
-      {
-        month: 'Mar',
-        emergency: 15,
-        total: 190
-      },
-
-      {
-        month: 'Apr',
-        emergency: 22,
-        total: 210
-      },
-
-      {
-        month: 'May',
-        emergency: 19,
-        total: 240
-      },
-
-      {
-        month: 'Jun',
-        emergency: 28,
-        total: 310
-      },
-
-      {
-        month: 'Jul',
-        emergency: 34,
-        total: 380
-      },
-
-      {
-        month: 'Aug',
-        emergency,
-        total
-      }
+      { month: 'Jan', emergency: 12, total: 140 },
+      { month: 'Feb', emergency: 18, total: 165 },
+      { month: 'Mar', emergency: 15, total: 190 },
+      { month: 'Apr', emergency: 22, total: 210 },
+      { month: 'May', emergency: 19, total: 240 },
+      { month: 'Jun', emergency: 28, total: 310 },
+      { month: 'Jul', emergency: 34, total: 380 },
+      { month: 'Aug', emergency, total }
     ];
 
     return {
       overview: {
-        totalComplaints:
-          total,
-
-        emergencyComplaints:
-          emergency,
-
-        resolvedComplaints:
-          resolved,
-
-        pendingComplaints:
-          pending,
-
+        totalComplaints: total,
+        emergencyComplaints: emergency,
+        resolvedComplaints: resolved,
+        pendingComplaints: pending,
         totalAffectedCitizens,
-
-        avgResolutionHours:
-          3.4,
-
-        duplicateReductionPercent:
-          48.5
+        avgResolutionHours: 3.4,
+        duplicateReductionPercent: 48.5
       },
 
       priorityDistribution,
@@ -1895,10 +2008,7 @@ export class ComplaintService {
       monthlyTrends,
 
       recentComplaints:
-        store.complaints.slice(
-          0,
-          5
-        )
+        store.complaints.slice(0, 5)
     };
   }
 }
