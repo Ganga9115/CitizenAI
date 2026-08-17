@@ -22,10 +22,13 @@ import { OfficerDashboard } from '../pages/officer/OfficerDashboard';
 import { OfficerAnalysis } from '../pages/officer/OfficerAnalysis';
 import { OfficerHistory } from '../pages/officer/OfficerHistory';
 import { OfficerMapPage } from '../pages/officer/OfficerMapPage';
+
 // Admin Pages
 import { AdminDashboard } from '../pages/admin/AdminDashboard';
 import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { SystemLogsPage } from '../pages/admin/SystemLogsPage';
+import { UniqueComplaints } from '../pages/admin/UniqueComplaints';
+import { DepartmentOfficers } from '../pages/admin/Departmentofficers';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -105,20 +108,37 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
-       <Route
-  path="/officer/map"
-  element={
-    <ProtectedRoute allowedRoles={['OFFICER', 'ADMIN']}>
-      <OfficerMapPage />
-    </ProtectedRoute>
-  }
-/>
+      <Route
+        path="/officer/map"
+        element={
+          <ProtectedRoute allowedRoles={['OFFICER', 'ADMIN']}>
+            <OfficerMapPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Admin Protected Routes */}
       <Route
         path="/admin/dashboard"
         element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/unique-complaints"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <UniqueComplaints />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/officers"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <DepartmentOfficers />
           </ProtectedRoute>
         }
       />
