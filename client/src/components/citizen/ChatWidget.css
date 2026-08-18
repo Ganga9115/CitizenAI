@@ -1,0 +1,616 @@
+/* =========================================================
+   CITIZEN ASSIST - FLOATING CHATBOT
+   ========================================================= */
+
+.citizen-assist-fab {
+  position: fixed !important;
+  right: 26px !important;
+  bottom: 26px !important;
+
+  width: 62px !important;
+  height: 62px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border: 1px solid rgba(196, 181, 253, 0.35) !important;
+  border-radius: 20px !important;
+
+  color: #ffffff !important;
+
+  background: linear-gradient(
+    135deg,
+    #6d28d9,
+    #7c3aed 50%,
+    #a855f7
+  ) !important;
+
+  box-shadow:
+    0 12px 35px rgba(124, 58, 237, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset !important;
+
+  cursor: pointer !important;
+
+  z-index: 99999 !important;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+.citizen-assist-fab:hover {
+  transform: translateY(-3px) scale(1.04) !important;
+
+  box-shadow:
+    0 18px 45px rgba(124, 58, 237, 0.58),
+    0 0 35px rgba(168, 85, 247, 0.25) !important;
+}
+
+.citizen-assist-fab-open {
+  border-radius: 18px !important;
+}
+
+.citizen-assist-fab-pulse {
+  position: absolute !important;
+
+  top: -2px !important;
+  right: -2px !important;
+
+  width: 13px !important;
+  height: 13px !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border-radius: 50% !important;
+
+  background: #c4b5fd !important;
+
+  border: 2px solid #090d16 !important;
+
+  box-shadow:
+    0 0 12px rgba(196, 181, 253, 0.95) !important;
+}
+
+/* =========================================================
+   CHAT WINDOW
+   ========================================================= */
+
+.citizen-assist-window {
+  position: fixed !important;
+
+  right: 26px !important;
+  bottom: 102px !important;
+
+  width: 390px !important;
+  max-width: calc(100vw - 32px) !important;
+
+  height: 610px !important;
+  max-height: calc(100vh - 130px) !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  overflow: hidden !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(17, 12, 35, 0.98),
+      rgba(15, 23, 42, 0.98)
+    ) !important;
+
+  backdrop-filter: blur(22px) !important;
+  -webkit-backdrop-filter: blur(22px) !important;
+
+  border: 1px solid rgba(167, 139, 250, 0.28) !important;
+
+  border-radius: 24px !important;
+
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.50),
+    0 0 55px rgba(124, 58, 237, 0.16) !important;
+
+  z-index: 99998 !important;
+
+  animation: citizenAssistOpen 0.22s ease-out !important;
+}
+
+@keyframes citizenAssistOpen {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.citizen-assist-header {
+  display: flex !important;
+
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  min-height: 76px !important;
+
+  padding: 15px 17px !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(124, 58, 237, 0.34),
+      rgba(168, 85, 247, 0.12)
+    ) !important;
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.citizen-assist-brand {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 11px !important;
+}
+
+.citizen-assist-avatar {
+  width: 43px !important;
+  height: 43px !important;
+
+  flex-shrink: 0 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  color: #ffffff !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #a855f7
+    ) !important;
+
+  border-radius: 14px !important;
+
+  box-shadow:
+    0 8px 22px rgba(124, 58, 237, 0.38) !important;
+}
+
+.citizen-assist-title {
+  color: #ffffff !important;
+
+  font-size: 15px !important;
+  line-height: 20px !important;
+
+  font-weight: 700 !important;
+}
+
+.citizen-assist-status {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 5px !important;
+
+  margin-top: 2px !important;
+
+  color: #c4b5fd !important;
+
+  font-size: 11px !important;
+  line-height: 16px !important;
+}
+
+.citizen-assist-online-dot {
+  width: 6px !important;
+  height: 6px !important;
+
+  flex-shrink: 0 !important;
+
+  border-radius: 50% !important;
+
+  background: #a78bfa !important;
+
+  box-shadow:
+    0 0 8px rgba(167, 139, 250, 0.95) !important;
+}
+
+.citizen-assist-close {
+  width: 34px !important;
+  height: 34px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  color: #ddd6fe !important;
+
+  background:
+    rgba(255, 255, 255, 0.06) !important;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.08) !important;
+
+  border-radius: 10px !important;
+
+  cursor: pointer !important;
+}
+
+.citizen-assist-close:hover {
+  background:
+    rgba(139, 92, 246, 0.20) !important;
+}
+
+/* =========================================================
+   MESSAGE AREA
+   ========================================================= */
+
+.citizen-assist-messages {
+  flex: 1 !important;
+
+  min-height: 0 !important;
+
+  overflow-y: auto !important;
+
+  padding: 18px 15px !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  gap: 13px !important;
+
+  background:
+    rgba(5, 7, 15, 0.16) !important;
+}
+
+.citizen-assist-messages::-webkit-scrollbar {
+  width: 5px !important;
+}
+
+.citizen-assist-messages::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.citizen-assist-messages::-webkit-scrollbar-thumb {
+  background:
+    rgba(139, 92, 246, 0.35) !important;
+
+  border-radius: 10px !important;
+}
+
+.citizen-assist-row {
+  display: flex !important;
+
+  align-items: flex-end !important;
+
+  gap: 8px !important;
+
+  max-width: 91% !important;
+}
+
+.citizen-assist-row-user {
+  align-self: flex-end !important;
+
+  justify-content: flex-end !important;
+}
+
+.citizen-assist-mini-avatar {
+  width: 26px !important;
+  height: 26px !important;
+
+  flex: 0 0 26px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  color: #c4b5fd !important;
+
+  background:
+    rgba(124, 58, 237, 0.24) !important;
+
+  border:
+    1px solid rgba(167, 139, 250, 0.20) !important;
+
+  border-radius: 9px !important;
+}
+
+.citizen-assist-bubble {
+  padding: 11px 13px !important;
+
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+
+  white-space: pre-wrap !important;
+
+  border-radius: 15px !important;
+}
+
+.citizen-assist-ai-bubble {
+  color: #ede9fe !important;
+
+  background:
+    rgba(255, 255, 255, 0.055) !important;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.08) !important;
+
+  border-bottom-left-radius: 5px !important;
+}
+
+.citizen-assist-user-bubble {
+  color: #ffffff !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #6d28d9,
+      #8b5cf6
+    ) !important;
+
+  border-bottom-right-radius: 5px !important;
+
+  box-shadow:
+    0 6px 18px rgba(109, 40, 217, 0.25) !important;
+}
+
+.citizen-assist-thinking {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 7px !important;
+
+  color: #c4b5fd !important;
+}
+
+.citizen-assist-spinner {
+  animation:
+    citizenAssistSpin 0.9s linear infinite !important;
+}
+
+@keyframes citizenAssistSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   QUICK REPLIES
+   ========================================================= */
+
+.citizen-assist-quick-replies {
+  display: flex !important;
+
+  gap: 7px !important;
+
+  padding: 9px 13px !important;
+
+  overflow-x: auto !important;
+
+  border-top:
+    1px solid rgba(255, 255, 255, 0.05) !important;
+
+  scrollbar-width: none !important;
+}
+
+.citizen-assist-quick-replies::-webkit-scrollbar {
+  display: none !important;
+}
+
+.citizen-assist-quick-replies button {
+  flex: 0 0 auto !important;
+
+  width: auto !important;
+  min-height: auto !important;
+
+  padding: 7px 10px !important;
+  margin: 0 !important;
+
+  color: #c4b5fd !important;
+
+  background:
+    rgba(124, 58, 237, 0.10) !important;
+
+  border:
+    1px solid rgba(167, 139, 250, 0.18) !important;
+
+  border-radius: 10px !important;
+
+  font-size: 10px !important;
+  line-height: 14px !important;
+
+  white-space: nowrap !important;
+
+  cursor: pointer !important;
+}
+
+.citizen-assist-quick-replies button:hover {
+  background:
+    rgba(124, 58, 237, 0.22) !important;
+
+  border-color:
+    rgba(167, 139, 250, 0.35) !important;
+}
+
+/* =========================================================
+   LOGIN HINT
+   ========================================================= */
+
+.citizen-assist-login-hint {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 7px !important;
+
+  padding: 7px 14px !important;
+
+  color: #a5b4fc !important;
+
+  background:
+    rgba(124, 58, 237, 0.07) !important;
+
+  font-size: 10px !important;
+  line-height: 15px !important;
+}
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+.citizen-assist-input-area {
+  display: flex !important;
+
+  align-items: center !important;
+
+  gap: 8px !important;
+
+  padding: 12px !important;
+
+  background:
+    rgba(10, 10, 20, 0.30) !important;
+
+  border-top:
+    1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.citizen-assist-input-area input {
+  flex: 1 !important;
+
+  min-width: 0 !important;
+
+  width: auto !important;
+  height: auto !important;
+
+  padding: 11px 13px !important;
+
+  color: #ffffff !important;
+
+  background:
+    rgba(255, 255, 255, 0.055) !important;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.09) !important;
+
+  border-radius: 12px !important;
+
+  outline: none !important;
+
+  font-size: 13px !important;
+  line-height: 18px !important;
+}
+
+.citizen-assist-input-area input::placeholder {
+  color: #71717a !important;
+}
+
+.citizen-assist-input-area input:focus {
+  border-color:
+    rgba(139, 92, 246, 0.60) !important;
+
+  box-shadow:
+    0 0 0 3px rgba(139, 92, 246, 0.10) !important;
+}
+
+.citizen-assist-send {
+  width: 40px !important;
+  height: 40px !important;
+
+  min-width: 40px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  color: #ffffff !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #a855f7
+    ) !important;
+
+  border: none !important;
+
+  border-radius: 12px !important;
+
+  cursor: pointer !important;
+}
+
+.citizen-assist-send:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+}
+
+.citizen-assist-send:disabled {
+  opacity: 0.38 !important;
+
+  cursor: not-allowed !important;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.citizen-assist-footer {
+  padding: 6px 12px 9px !important;
+
+  text-align: center !important;
+
+  color: #71717a !important;
+
+  background:
+    rgba(10, 10, 20, 0.30) !important;
+
+  font-size: 9px !important;
+  line-height: 13px !important;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .citizen-assist-fab {
+    right: 17px !important;
+    bottom: 17px !important;
+
+    width: 56px !important;
+    height: 56px !important;
+
+    border-radius: 18px !important;
+  }
+
+  .citizen-assist-window {
+    right: 10px !important;
+    bottom: 82px !important;
+
+    width: calc(100vw - 20px) !important;
+
+    height: min(
+      650px,
+      calc(100vh - 100px)
+    ) !important;
+
+    max-height: calc(100vh - 100px) !important;
+
+    border-radius: 20px !important;
+  }
+}
