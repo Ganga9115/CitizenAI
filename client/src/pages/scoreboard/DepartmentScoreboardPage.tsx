@@ -5,25 +5,24 @@ import { DepartmentScoreboardItem } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   BrainCircuit,
-  LayoutDashboard,
+  BarChart2,
   BarChart3,
-  History,
-  Bell,
-  Settings,
-  Search,
+  FileCheck,
+  Users,
   User,
+  Search,
+  Bell,
   Trophy,
   Star,
   Award,
   TrendingUp,
-  ShieldAlert,
-  Users,
-  FileText
+  Loader2
 } from 'lucide-react';
 
 export const DepartmentScoreboardPage: React.FC = () => {
   const { user } = useAuth();
   const [scoreboard, setScoreboard] = useState<DepartmentScoreboardItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,8 +33,10 @@ export const DepartmentScoreboardPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await apiClient.get('/analytics/scoreboard');
-      if (res.data.success) {
+      if (res.data?.success) {
         setScoreboard(res.data.scoreboard || []);
+      } else if (Array.isArray(res.data)) {
+        setScoreboard(res.data);
       }
     } catch (err) {
       console.error('Failed to fetch scoreboard', err);
@@ -44,21 +45,26 @@ export const DepartmentScoreboardPage: React.FC = () => {
     }
   };
 
+  const filteredScoreboard = scoreboard.filter((item) =>
+    item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.code?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const getRankBadge = (rank: number) => {
     if (rank === 1) return <span className="text-xl">🥇</span>;
     if (rank === 2) return <span className="text-xl">🥈</span>;
     if (rank === 3) return <span className="text-xl">🥉</span>;
     return (
-      <span className="w-7 h-7 rounded-full bg-purple-50 text-[#5E4075] font-bold flex items-center justify-center text-xs">
+      <span className="w-7 h-7 rounded-full bg-purple-50 text-[#5E4075] font-bold flex items-center justify-center text-xs border border-purple-100">
         #{rank}
       </span>
     );
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F8FAFC] text-[#1F2937]">
-      {/* LEFT SIDEBAR */}
-      <aside className="w-64 bg-[#5E4075] text-white flex flex-col justify-between p-6 shrink-0 hidden md:flex">
+    <div className="min-h-screen flex bg-[#F8FAFC] text-[#1F2937] w-full">
+      {/* LEFT SIDEBAR - MATCHING ADMIN DASHBOARD */}
+      <aside className="w-1/5 min-w-[220px] max-w-[280px] bg-[#5E4075] text-white flex flex-col justify-between p-6 shrink-0 hidden md:flex">
         <div>
           <Link to="/" className="flex items-center gap-2.5 mb-10">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
@@ -67,61 +73,30 @@ export const DepartmentScoreboardPage: React.FC = () => {
             <span className="font-extrabold text-xl tracking-tight text-white">CivicAI</span>
           </Link>
 
-          <nav className="space-y-1">
+          <nav className="space-y-1.5">
             <Link
-              to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/officer/dashboard'}
+              to="/admin/dashboard"
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
             >
-              <LayoutDashboard className="w-4 h-4" /> Dashboard
+              <BarChart2 className="w-4 h-4" /> Analytics & Trends
             </Link>
             <Link
               to="/scoreboard"
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/15 text-white font-semibold text-xs transition-colors"
             >
-              <Trophy className="w-4 h-4" /> Scoreboard
-            </Link>
-            {user?.role === 'ADMIN' ? (
-              <>
-                <Link
-                  to="/admin/users"
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
-                >
-                  <Users className="w-4 h-4" /> User Management
-                </Link>
-                <Link
-                  to="/admin/logs"
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
-                >
-                  <FileText className="w-4 h-4" /> System Logs
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/officer/analysis"
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
-                >
-                  <BarChart3 className="w-4 h-4" /> Analysis
-                </Link>
-                <Link
-                  to="/officer/history"
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
-                >
-                  <History className="w-4 h-4" /> History
-                </Link>
-              </>
-            )}
-            <Link
-              to="/notifications"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
-            >
-              <Bell className="w-4 h-4" /> Notifications
+              <BarChart3 className="w-4 h-4" /> Scoreboard
             </Link>
             <Link
-              to="/profile"
+              to="/admin/unique-complaints"
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
             >
-              <Settings className="w-4 h-4" /> Settings
+              <FileCheck className="w-4 h-4" /> Unique Complaints
+            </Link>
+            <Link
+              to="/admin/officers"
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs transition-colors"
+            >
+              <Users className="w-4 h-4" /> Department Officers
             </Link>
           </nav>
         </div>
@@ -132,34 +107,39 @@ export const DepartmentScoreboardPage: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <h4 className="text-xs font-bold text-white truncate">{user?.fullName || 'Ganga'}</h4>
-            <p className="text-[10px] text-white/70 truncate">{user?.role || 'Administrator'}</p>
+            <p className="text-[10px] text-white/70 truncate">{user?.department || 'System Administrator'}</p>
           </div>
         </div>
       </aside>
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {/* TOP NAVBAR */}
-        <header className="bg-white border-b border-[#E5E7EB] px-6 py-4 flex items-center justify-between gap-4">
-          <h1 className="text-lg font-extrabold text-[#1F2937]">Department Performance Rankings</h1>
+        {/* TOP HEADER */}
+        <header className="bg-white border-b border-[#E5E7EB] px-6 py-4 flex items-center justify-between gap-4 sticky top-0 z-10 w-full">
+          <div>
+            <h1 className="text-lg font-extrabold text-[#1F2937]">Department Performance Rankings</h1>
+            <p className="text-xs text-[#6B7280]">Live evaluation of department efficiency, resolution rates, and citizen satisfaction</p>
+          </div>
 
           <div className="flex items-center gap-4">
-            <div className="relative w-64 hidden sm:block">
+            <div className="relative w-72 hidden sm:block">
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Search department ratings..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#F3F4F6] text-xs text-[#1F2937] focus:outline-none focus:ring-1 focus:ring-[#5E4075]"
               />
             </div>
-            <button className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-gray-50 transition-colors">
+            <button className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-gray-50 transition-colors shrink-0">
               <Bell className="w-4 h-4" />
             </button>
           </div>
         </header>
 
-        {/* BODY */}
-        <main className="p-6 max-w-7xl w-full mx-auto space-y-6">
+        {/* DASHBOARD BODY */}
+        <main className="p-6 w-full mx-auto space-y-6">
           {/* BANNER HEADER */}
           <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
@@ -168,7 +148,7 @@ export const DepartmentScoreboardPage: React.FC = () => {
               </div>
               <h2 className="text-xl font-extrabold text-[#1F2937]">Civic Accountability Scoreboard</h2>
               <p className="text-xs text-[#6B7280] mt-0.5">
-                Evaluation computed via resolution speed, SLA compliance %, and direct citizen ratings.
+                Evaluations computed dynamically via resolution speed, SLA compliance %, and direct citizen ratings.
               </p>
             </div>
             <div className="px-3.5 py-1.5 rounded-full bg-purple-50 text-[#5E4075] border border-purple-200 text-xs font-bold shrink-0">
@@ -177,17 +157,18 @@ export const DepartmentScoreboardPage: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="py-20 text-center text-[#6B7280] text-xs font-semibold">
-              Loading department performance rankings...
+            <div className="flex flex-col items-center justify-center py-20 text-[#6B7280] space-y-2">
+              <Loader2 className="w-6 h-6 animate-spin text-[#5E4075]" />
+              <p className="text-xs font-medium">Loading department performance rankings...</p>
             </div>
-          ) : scoreboard.length === 0 ? (
-            <div className="bg-white p-12 rounded-2xl border border-[#E5E7EB] text-center text-[#6B7280] text-xs">
+          ) : filteredScoreboard.length === 0 ? (
+            <div className="bg-white p-12 rounded-2xl border border-[#E5E7EB] text-center text-[#6B7280] text-xs font-medium">
               No department ranking data currently available.
             </div>
           ) : (
             <>
               {/* PODIUM TOP 3 */}
-              {scoreboard.length >= 3 && (
+              {scoreboard.length >= 3 && !searchTerm && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                   {/* Rank 2 (Silver) */}
                   <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-xs text-center order-2 md:order-1">
@@ -249,11 +230,11 @@ export const DepartmentScoreboardPage: React.FC = () => {
                     <TrendingUp className="w-4 h-4 text-[#5E4075]" /> Full Performance Standings
                   </h3>
                   <span className="text-[11px] text-[#6B7280] font-semibold">
-                    Total Departments: {scoreboard.length}
+                    Total Departments: {filteredScoreboard.length}
                   </span>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto w-full">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-[#F8FAFC] text-[#6B7280] font-bold border-b border-[#E5E7EB]">
                       <tr>
@@ -267,13 +248,13 @@ export const DepartmentScoreboardPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E5E7EB]">
-                      {scoreboard.map((item, index) => (
+                      {filteredScoreboard.map((item, index) => (
                         <tr key={item.id || index} className="hover:bg-gray-50/80 transition-colors">
                           <td className="py-3.5 px-4 font-mono font-bold">{getRankBadge(item.rank || index + 1)}</td>
                           <td className="py-3.5 px-4">
                             <strong className="text-[#1F2937] font-bold block text-xs">{item.name}</strong>
                             <span className="text-[10px] text-[#6B7280] font-mono">
-                              {item.code} • {item.totalComplaints} total complaints
+                              {item.code} {item.totalComplaints !== undefined && `• ${item.totalComplaints} total complaints`}
                             </span>
                           </td>
                           <td className="py-3.5 px-4">
@@ -288,7 +269,7 @@ export const DepartmentScoreboardPage: React.FC = () => {
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-[#6B7280] font-medium">
-                            {item.resolutionRatePercent}% ({item.resolvedComplaints}/{item.totalComplaints})
+                            {item.resolutionRatePercent}% {item.resolvedComplaints !== undefined && item.totalComplaints !== undefined && `(${item.resolvedComplaints}/${item.totalComplaints})`}
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             <span className="text-base font-extrabold text-[#5E4075] font-mono">
