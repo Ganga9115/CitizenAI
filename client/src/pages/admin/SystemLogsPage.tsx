@@ -113,7 +113,7 @@ export const SystemLogsPage: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <h4 className="text-xs font-bold text-white truncate">{user?.fullName || 'Hon. Sarah Jenkins'}</h4>
-            <p className="text-[10px] text-white/70 truncate">{user?.department || 'Dept of Public Safety'}</p>
+            <p className="text-[10px] text-white/70 truncate">{user?.departmentId || 'Dept of Public Safety'}</p>
           </div>
         </div>
       </aside>

@@ -46,7 +46,7 @@ export const OfficerHistory: React.FC = () => {
 
   // Filter complaints by Officer Department & Search & Status Filter
   const filteredHistory = complaints.filter((c) => {
-    const isSameDept = !user?.department || c.department_name === user.department || c.category === user.department;
+    const isSameDept = !user?.departmentId || c.department_id === user.departmentId;
     const matchesSearch =
       c.tracking_number?.toLowerCase().includes(search.toLowerCase()) ||
       c.summary?.toLowerCase().includes(search.toLowerCase()) ||
@@ -108,7 +108,7 @@ export const OfficerHistory: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <h4 className="text-xs font-bold text-white truncate">{user?.fullName || 'Ganga'}</h4>
-            <p className="text-[10px] text-white/70 truncate">{user?.department || 'Department Officer'}</p>
+            <p className="text-[10px] text-white/70 truncate">{user?.departmentId || 'Department Officer'}</p>
           </div>
         </div>
       </aside>
@@ -205,7 +205,7 @@ export const OfficerHistory: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <span
                             className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                              c.priority === 'Emergency' || c.priority === 'Critical'
+                              c.priority === 'Emergency'
                                 ? 'bg-rose-50 text-rose-600 border border-rose-200'
                                 : 'bg-amber-50 text-amber-600 border border-amber-200'
                             }`}

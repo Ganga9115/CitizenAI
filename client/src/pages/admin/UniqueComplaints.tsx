@@ -115,7 +115,7 @@ export const UniqueComplaints: React.FC = () => {
           </div>
           <div className="overflow-hidden">
             <h4 className="text-xs font-bold text-white truncate">{user?.fullName || 'Ganga'}</h4>
-            <p className="text-[10px] text-white/70 truncate">{user?.department || 'System Administrator'}</p>
+            <p className="text-[10px] text-white/70 truncate">{user?.departmentId || 'System Administrator'}</p>
           </div>
         </div>
       </aside>

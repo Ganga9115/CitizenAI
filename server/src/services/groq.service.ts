@@ -30,7 +30,8 @@ export class GroqService {
       );
     }
 
-    const stats = fs.statSync(filePath);
+    const stats =
+      fs.statSync(filePath);
 
     console.log(
       '[GroqService] File size:',
@@ -61,22 +62,39 @@ export class GroqService {
       'whisper-large-v3'
     );
 
-    // Do NOT provide language.
-    // Whisper automatically handles multilingual speech.
+    /*
+     * Do NOT force a language here.
+     *
+     * Whisper will automatically detect the spoken language.
+     * We request verbose_json so that we can inspect the
+     * detected language.
+     */
 
     transcriptionForm.append(
       'response_format',
-      'json'
+      'verbose_json'
     );
 
+    /*
+     * Important:
+     *
+     * temperature=0 gives the most deterministic behavior
+     * supported by the API.
+     */
     transcriptionForm.append(
       'temperature',
       '0'
     );
 
+    /*
+     * Keep the prompt short and relevant.
+     *
+     * Groq documents prompts as optional guidance for style
+     * and terminology.
+     */
     transcriptionForm.append(
       'prompt',
-      'Government citizen complaint call. Preserve the language spoken by the citizen and accurately transcribe names, locations, streets, departments and civic-service terms.'
+      'Citizen complaint call. Accurately transcribe the spoken words. Preserve names, locations, streets, departments, quantities and civic-service terminology. Do not invent words or facts.'
     );
 
     try {
@@ -107,14 +125,39 @@ export class GroqService {
           }
         );
 
+      const transcriptionData =
+        transcriptionResponse.data;
+
       const originalTranscript =
-        transcriptionResponse.data?.text?.trim();
+        transcriptionData?.text?.trim();
 
       if (!originalTranscript) {
+
         throw new Error(
           'Groq returned an empty original transcript.'
         );
       }
+
+      /*
+       * verbose_json normally provides the detected language.
+       *
+       * Example:
+       * language = "en"
+       * language = "ta"
+       * language = "hi"
+       */
+
+      const detectedLanguage =
+        typeof transcriptionData?.language === 'string'
+          ? transcriptionData.language
+              .trim()
+              .toLowerCase()
+          : '';
+
+      console.log(
+        '[GroqService] Detected language:',
+        detectedLanguage || 'unknown'
+      );
 
       console.log(
         '[GroqService] Original transcript:',
@@ -122,8 +165,57 @@ export class GroqService {
       );
 
       // =====================================================
-      // 2. ENGLISH TRANSLATION
+      // 2. ENGLISH AUDIO
       // =====================================================
+
+      /*
+       * IMPORTANT:
+       *
+       * If the audio is already English, do NOT send it
+       * through the translation endpoint.
+       *
+       * The original transcript is already the English
+       * transcript we need for analysis.
+       *
+       * This prevents unnecessary translation requests and
+       * avoids fabricated/repeated text for English audio.
+       */
+
+      if (
+        detectedLanguage === 'en'
+      ) {
+
+        console.log(
+          '[GroqService] Audio already detected as English.'
+        );
+
+        console.log(
+          '[GroqService] Skipping English translation endpoint.'
+        );
+
+        console.log(
+          '[GroqService] English transcript:',
+          originalTranscript
+        );
+
+        return {
+          originalTranscript,
+          englishTranscript:
+            originalTranscript
+        };
+      }
+
+      // =====================================================
+      // 3. NON-ENGLISH AUDIO → ENGLISH TRANSLATION
+      // =====================================================
+
+      console.log(
+        '[GroqService] Non-English audio detected.'
+      );
+
+      console.log(
+        '[GroqService] Requesting English translation...'
+      );
 
       const translationForm =
         new FormData();
@@ -148,13 +240,16 @@ export class GroqService {
         '0'
       );
 
+      /*
+       * Groq's translation endpoint translates the speech
+       * directly into English.
+       *
+       * The prompt is intentionally focused on fidelity and
+       * does not ask the model to invent or summarize anything.
+       */
       translationForm.append(
         'prompt',
-        'Translate this citizen complaint accurately into English. Preserve the meaning of locations, civic problems, departments, quantities, durations, safety conditions and urgency. Do not add or remove facts.'
-      );
-
-      console.log(
-        '[GroqService] Requesting English translation...'
+        'Translate the spoken citizen complaint into English faithfully. Preserve the exact meaning of locations, civic problems, departments, quantities, durations, safety conditions and urgency. Do not add, remove, summarize or invent facts.'
       );
 
       const translationResponse =
@@ -183,6 +278,7 @@ export class GroqService {
         translationResponse.data?.text?.trim();
 
       if (!englishTranscript) {
+
         throw new Error(
           'Groq returned an empty English translation.'
         );

@@ -67,6 +67,16 @@ export interface ComplaintRecord {
   keywords: string[];
   estimated_resolution: string;
 
+  // =========================================================
+  // SLA INFORMATION
+  // =========================================================
+
+  sla_hours?: number;
+  sla_deadline?: string | null;
+  sla_status?: 'ON_TIME' | 'AT_RISK' | 'BREACHED';
+  sla_breached?: boolean;
+  sla_breached_at?: string | null;
+
   affected_citizens_count: number;
   affected_user_ids: string[];
   is_escalated: boolean;
@@ -101,6 +111,21 @@ export interface DepartmentScoreboardItem {
   overallScore: number;
   totalComplaints: number;
   resolvedComplaints: number;
+}
+
+export interface NotificationRecord {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type:
+    | 'COMPLAINT_CREATED'
+    | 'STATUS_UPDATED'
+    | 'EMERGENCY_ALERT'
+    | 'ASSIGNED';
+  is_read: boolean;
+  link_url?: string | null;
+  created_at: string;
 }
 
 class InMemoryStore {
@@ -243,6 +268,16 @@ class InMemoryStore {
 
       estimated_resolution: '2 to 4 hours',
 
+      sla_hours: 4,
+      sla_deadline: new Date(
+        Date.now() - 3600000
+      ).toISOString(),
+      sla_status: 'BREACHED',
+      sla_breached: true,
+      sla_breached_at: new Date(
+        Date.now() - 1800000
+      ).toISOString(),
+
       affected_citizens_count: 127,
       affected_user_ids: ['usr-citizen-1'],
       is_escalated: true,
@@ -251,7 +286,7 @@ class InMemoryStore {
       feedback_comment: null,
 
       created_at: new Date(
-        Date.now() - 3600000 * 2
+        Date.now() - 3600000 * 6
       ).toISOString(),
 
       updated_at: new Date(
@@ -308,6 +343,14 @@ class InMemoryStore {
       ],
 
       estimated_resolution: '1 to 2 hours',
+
+      sla_hours: 2,
+      sla_deadline: new Date(
+        Date.now() + 3600000
+      ).toISOString(),
+      sla_status: 'ON_TIME',
+      sla_breached: false,
+      sla_breached_at: null,
 
       affected_citizens_count: 48,
       affected_user_ids: ['usr-citizen-1'],
@@ -374,6 +417,14 @@ class InMemoryStore {
 
       estimated_resolution: '6 to 12 hours',
 
+      sla_hours: 12,
+      sla_deadline: new Date(
+        Date.now() + 3600000 * 4
+      ).toISOString(),
+      sla_status: 'ON_TIME',
+      sla_breached: false,
+      sla_breached_at: null,
+
       affected_citizens_count: 14,
       affected_user_ids: ['usr-citizen-1'],
       is_escalated: false,
@@ -439,6 +490,14 @@ class InMemoryStore {
 
       estimated_resolution: '12 to 24 hours',
 
+      sla_hours: 24,
+      sla_deadline: new Date(
+        Date.now() - 3600000 * 12
+      ).toISOString(),
+      sla_status: 'ON_TIME',
+      sla_breached: false,
+      sla_breached_at: null,
+
       affected_citizens_count: 32,
       affected_user_ids: ['usr-citizen-1'],
       is_escalated: false,
@@ -475,6 +534,8 @@ class InMemoryStore {
       ).toISOString()
     }
   ];
+
+  notifications: NotificationRecord[] = [];
 
   logs: any[] = [
     {
@@ -548,6 +609,240 @@ export class ComplaintService {
   }
 
   // =========================================================
+  // SLA HELPERS
+  // =========================================================
+
+  private static getSlaHours(
+    priority: ComplaintRecord['priority'],
+    estimatedResolution?: string
+  ): number {
+
+    if (estimatedResolution) {
+
+      const rangeMatch =
+        estimatedResolution.match(
+          /(\d+)\s*(?:to|-)\s*(\d+)\s*hours?/i
+        );
+
+      if (rangeMatch) {
+        return Number(rangeMatch[2]);
+      }
+
+      const singleMatch =
+        estimatedResolution.match(
+          /(\d+)\s*hours?/i
+        );
+
+      if (singleMatch) {
+        return Number(singleMatch[1]);
+      }
+    }
+
+    switch (priority) {
+
+      case 'Emergency':
+        return 4;
+
+      case 'High':
+        return 12;
+
+      case 'Medium':
+        return 24;
+
+      case 'Low':
+        return 48;
+
+      default:
+        return 24;
+    }
+  }
+
+  private static calculateSlaStatus(
+    complaint: ComplaintRecord
+  ): 'ON_TIME' | 'AT_RISK' | 'BREACHED' {
+
+    if (
+      complaint.status === 'Resolved' ||
+      complaint.status === 'Rejected'
+    ) {
+      return 'ON_TIME';
+    }
+
+    if (!complaint.sla_deadline) {
+      return 'ON_TIME';
+    }
+
+    const deadline =
+      new Date(
+        complaint.sla_deadline
+      ).getTime();
+
+    const now =
+      Date.now();
+
+    if (now >= deadline) {
+      return 'BREACHED';
+    }
+
+    const remaining =
+      deadline - now;
+
+    const totalSla =
+      (complaint.sla_hours || 24) *
+      60 *
+      60 *
+      1000;
+
+    if (
+      remaining <=
+      totalSla * 0.25
+    ) {
+      return 'AT_RISK';
+    }
+
+    return 'ON_TIME';
+  }
+
+  private static createAdminSlaNotification(
+    complaint: ComplaintRecord
+  ): void {
+
+    const existingNotification =
+      store.notifications.find(
+        (notification) =>
+          notification.user_id ===
+            'usr-admin-1' &&
+          notification.type ===
+            'EMERGENCY_ALERT' &&
+          notification.link_url ===
+            `/admin/complaints/${complaint.id}`
+      );
+
+    if (existingNotification) {
+      return;
+    }
+
+    const notification:
+      NotificationRecord = {
+
+      id:
+        `notification-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 8)}`,
+
+      user_id:
+        'usr-admin-1',
+
+      title:
+        `SLA Breached - ${complaint.tracking_number}`,
+
+      message:
+        `Complaint ${complaint.tracking_number} has exceeded its ${complaint.sla_hours || 24}-hour SLA. Officer: ${
+          complaint.assigned_officer_name ||
+          'Not Assigned'
+        }. Priority: ${complaint.priority}.`,
+
+      type:
+        'EMERGENCY_ALERT',
+
+      is_read:
+        false,
+
+      link_url:
+        `/admin/complaints/${complaint.id}`,
+
+      created_at:
+        new Date().toISOString()
+    };
+
+    store.notifications.unshift(
+      notification
+    );
+
+    store.logs.unshift({
+      id:
+        `log-${Date.now()}-sla`,
+
+      user_name:
+        'System Auto-Task',
+
+      action:
+        'SLA_BREACHED',
+
+      details: {
+
+        complaintId:
+          complaint.tracking_number,
+
+        priority:
+          complaint.priority,
+
+        assignedOfficer:
+          complaint.assigned_officer_name ||
+          'Not Assigned',
+
+        slaHours:
+          complaint.sla_hours,
+
+        slaDeadline:
+          complaint.sla_deadline,
+
+        breachedAt:
+          complaint.sla_breached_at
+      },
+
+      ip_address:
+        '127.0.0.1',
+
+      created_at:
+        new Date().toISOString()
+    });
+  }
+
+  static checkAndProcessSlaBreaches(): void {
+
+    for (
+      const complaint of store.complaints
+    ) {
+
+      if (
+        complaint.status === 'Resolved' ||
+        complaint.status === 'Rejected'
+      ) {
+        continue;
+      }
+
+      if (!complaint.sla_deadline) {
+        continue;
+      }
+
+      const slaStatus =
+        this.calculateSlaStatus(
+          complaint
+        );
+
+      complaint.sla_status =
+        slaStatus;
+
+      if (
+        slaStatus === 'BREACHED' &&
+        !complaint.sla_breached
+      ) {
+
+        complaint.sla_breached =
+          true;
+
+        complaint.sla_breached_at =
+          new Date().toISOString();
+
+        this.createAdminSlaNotification(
+          complaint
+        );
+      }
+    }
+  }
+
+  // =========================================================
   // REVERSE GEOCODING
   // =========================================================
 
@@ -557,6 +852,14 @@ export class ComplaintService {
   ): Promise<string | null> {
 
     try {
+
+      console.log(
+        '[GPS] Reverse geocoding coordinates:',
+        {
+          latitude,
+          longitude
+        }
+      );
 
       const response =
         await axios.get(
@@ -576,7 +879,7 @@ export class ComplaintService {
                 'CivicAI-Citizen-Call-Intelligence/1.0'
             },
 
-            timeout: 10000
+            timeout: 15000
           }
         );
 
@@ -587,8 +890,18 @@ export class ComplaintService {
         typeof address === 'string' &&
         address.trim()
       ) {
+
+        console.log(
+          '[GPS] Reverse geocoding result:',
+          address.trim()
+        );
+
         return address.trim();
       }
+
+      console.warn(
+        '[GPS] Reverse geocoding returned no address.'
+      );
 
       return null;
 
@@ -632,7 +945,13 @@ export class ComplaintService {
       'hello',
       'problem',
       'area',
-      'issue'
+      'issue',
+      'facing',
+      'currently',
+      'today',
+      'yesterday',
+      'really',
+      'very'
     ]);
 
     return text
@@ -675,6 +994,9 @@ export class ComplaintService {
         transcript
       );
 
+    const uniqueCurrentWords =
+      [...new Set(currentWords)];
+
     const normalizedCategory =
       category
         .toLowerCase()
@@ -685,15 +1007,22 @@ export class ComplaintService {
         .toLowerCase()
         .trim();
 
+    console.log(
+      '[DuplicateDetection] New complaint:',
+      {
+        category,
+        transcript,
+        location,
+        latitude,
+        longitude,
+        meaningfulWords:
+          uniqueCurrentWords
+      }
+    );
+
     for (
       const complaint of activeComplaints
     ) {
-
-      let score = 0;
-
-      // -----------------------------------------------------
-      // 1. CATEGORY MATCH
-      // -----------------------------------------------------
 
       const sameCategory =
         complaint.category
@@ -701,15 +1030,16 @@ export class ComplaintService {
           .trim() ===
         normalizedCategory;
 
-      if (sameCategory) {
-        score += 35;
+      if (!sameCategory) {
+        continue;
       }
 
-      // -----------------------------------------------------
-      // 2. GPS PROXIMITY
-      // -----------------------------------------------------
+      let score = 35;
 
       let gpsClose = false;
+
+      let distanceKm:
+        number | null = null;
 
       if (
         typeof latitude === 'number' &&
@@ -718,7 +1048,7 @@ export class ComplaintService {
         typeof complaint.longitude === 'number'
       ) {
 
-        const distanceKm =
+        distanceKm =
           this.calculateDistanceKm(
             latitude,
             longitude,
@@ -740,25 +1070,29 @@ export class ComplaintService {
         );
 
         if (
-          distanceKm <= 0.5
+          distanceKm <= 0.25
         ) {
 
           score += 25;
           gpsClose = true;
 
         } else if (
+          distanceKm <= 0.5
+        ) {
+
+          score += 15;
+          gpsClose = true;
+
+        } else if (
           distanceKm <= 1.5
         ) {
 
-          score += 10;
+          score += 5;
         }
       }
 
-      // -----------------------------------------------------
-      // 3. LOCATION TEXT MATCH
-      // -----------------------------------------------------
-
-      let textLocationMatch = false;
+      let textLocationMatch =
+        false;
 
       if (
         normalizedLocation &&
@@ -783,13 +1117,11 @@ export class ComplaintService {
         ) {
 
           score += 20;
-          textLocationMatch = true;
+
+          textLocationMatch =
+            true;
         }
       }
-
-      // -----------------------------------------------------
-      // 4. TEXT SIMILARITY
-      // -----------------------------------------------------
 
       const existingWords =
         this.getMeaningfulWords(
@@ -798,21 +1130,30 @@ export class ComplaintService {
             complaint.summary
         );
 
-      const uniqueCurrentWords =
-        [...new Set(currentWords)];
+      const uniqueExistingWords =
+        [...new Set(existingWords)];
 
-      let matchedWords = 0;
+      let matchedWords =
+        0;
+
+      const matchedWordList:
+        string[] = [];
 
       for (
         const word of uniqueCurrentWords
       ) {
 
         if (
-          existingWords.includes(
+          uniqueExistingWords.includes(
             word
           )
         ) {
+
           matchedWords++;
+
+          matchedWordList.push(
+            word
+          );
         }
       }
 
@@ -821,6 +1162,39 @@ export class ComplaintService {
           ? matchedWords /
             uniqueCurrentWords.length
           : 0;
+
+      const genericWords =
+        new Set([
+          'water',
+          'electricity',
+          'power',
+          'road',
+          'street',
+          'garbage',
+          'supply',
+          'problem',
+          'service',
+          'issue',
+          'drainage',
+          'sewage'
+        ]);
+
+      const meaningfulMatchList =
+        matchedWordList.filter(
+          (word) =>
+            !genericWords.has(word)
+        );
+
+      const meaningfulMatchCount =
+        meaningfulMatchList.length;
+
+      const strongTextSimilarity =
+        textSimilarity >= 0.40 &&
+        meaningfulMatchCount >= 1;
+
+      const veryStrongTextSimilarity =
+        textSimilarity >= 0.60 &&
+        matchedWords >= 2;
 
       const textScore =
         Math.min(
@@ -832,34 +1206,21 @@ export class ComplaintService {
 
       score += textScore;
 
-      // -----------------------------------------------------
-      // 5. SAFETY RULE
-      // -----------------------------------------------------
-      //
-      // A duplicate should normally require:
-      //
-      // Same category
-      // AND
-      // Same/nearby GPS
-      // AND meaningful text similarity
-      //
-      // OR
-      //
-      // Same category
-      // AND exact/similar location text
-      // AND text similarity
-      //
-      // -----------------------------------------------------
-
       const strongGpsDuplicate =
         sameCategory &&
         gpsClose &&
-        textSimilarity >= 0.15;
+        (
+          strongTextSimilarity ||
+          veryStrongTextSimilarity
+        );
 
       const strongLocationDuplicate =
         sameCategory &&
         textLocationMatch &&
-        textSimilarity >= 0.15;
+        (
+          strongTextSimilarity ||
+          veryStrongTextSimilarity
+        );
 
       const finalDuplicate =
         strongGpsDuplicate ||
@@ -876,8 +1237,21 @@ export class ComplaintService {
 
           gpsClose,
 
+          distanceKm,
+
           locationMatch:
             textLocationMatch,
+
+          matchedWords:
+            matchedWordList,
+
+          meaningfulMatchedWords:
+            meaningfulMatchList,
+
+          matchedWordCount:
+            matchedWords,
+
+          meaningfulMatchCount,
 
           textSimilarity:
             Math.round(
@@ -885,6 +1259,10 @@ export class ComplaintService {
             ),
 
           score,
+
+          strongTextSimilarity,
+
+          veryStrongTextSimilarity,
 
           duplicate:
             finalDuplicate
@@ -906,7 +1284,7 @@ export class ComplaintService {
 
     if (
       bestMatch &&
-      bestScore >= 60
+      bestScore >= 65
     ) {
 
       console.log(
@@ -922,16 +1300,30 @@ export class ComplaintService {
 
       return {
         found: true,
-        similarity: bestScore,
+
+        similarity:
+          bestScore,
+
         similarComplaint:
           bestMatch
       };
     }
 
+    console.log(
+      '[DuplicateDetection] No sufficiently similar complaint found.',
+      {
+        bestScore
+      }
+    );
+
     return {
       found: false,
-      similarity: bestScore,
-      similarComplaint: null
+
+      similarity:
+        bestScore,
+
+      similarComplaint:
+        null
     };
   }
 
@@ -1089,6 +1481,7 @@ export class ComplaintService {
 
     const list:
       DepartmentScoreboardItem[] = [
+
       {
         rank: 1,
         id: 'dept-elec',
@@ -1219,28 +1612,54 @@ export class ComplaintService {
     console.log(
       '[ComplaintService] Incoming GPS:',
       {
-        latitude: lat,
-        longitude: lng
+        latitude:
+          lat,
+
+        longitude:
+          lng,
+
+        customLocation:
+          data.customLocation,
+
+        analysisLocation:
+          data.analysis?.location
       }
     );
 
-    // =======================================================
-    // DUPLICATE CHECK
-    // =======================================================
+    let gpsAddress:
+      string | null = null;
+
+    if (
+      lat !== null &&
+      lng !== null
+    ) {
+
+      gpsAddress =
+        await this.reverseGeocode(
+          lat,
+          lng
+        );
+    }
+
+    console.log(
+      '[ComplaintService] Resolved GPS address:',
+      gpsAddress
+    );
+
+    const duplicateLocation =
+      gpsAddress ||
+      data.customLocation ||
+      data.analysis.location ||
+      'Not specified';
 
     const duplicateResult =
       await this.findSimilarComplaint(
         data.transcript,
         data.analysis.category,
-        data.customLocation ||
-          data.analysis.location,
+        duplicateLocation,
         lat,
         lng
       );
-
-    // =======================================================
-    // MERGE EXISTING COMPLAINT
-    // =======================================================
 
     if (
       duplicateResult.found &&
@@ -1255,7 +1674,6 @@ export class ComplaintService {
         existingComplaint.tracking_number
       );
 
-      // Prevent double-counting same citizen
       if (
         !existingComplaint.affected_user_ids.includes(
           data.citizenId
@@ -1270,10 +1688,41 @@ export class ComplaintService {
           1;
       }
 
+      if (
+        lat !== null &&
+        lng !== null
+      ) {
+
+        existingComplaint.latitude =
+          lat;
+
+        existingComplaint.longitude =
+          lng;
+
+        if (gpsAddress) {
+
+          existingComplaint.gps_address =
+            gpsAddress;
+
+          existingComplaint.location =
+            gpsAddress;
+
+        } else if (
+          !existingComplaint.location ||
+          existingComplaint.location ===
+            'Not specified'
+        ) {
+
+          existingComplaint.location =
+            data.customLocation ||
+            data.analysis.location ||
+            'Not specified';
+        }
+      }
+
       existingComplaint.updated_at =
         new Date().toISOString();
 
-      // Keep duplicate probability updated
       existingComplaint.duplicate_probability =
         Math.max(
           existingComplaint.duplicate_probability,
@@ -1283,12 +1732,10 @@ export class ComplaintService {
       existingComplaint.possible_duplicate_id =
         null;
 
-      // Community impact escalation
       this.applyCommunityEscalation(
         existingComplaint
       );
 
-      // Log merge
       store.logs.unshift({
         id:
           `log-${Date.now()}`,
@@ -1317,7 +1764,9 @@ export class ComplaintService {
             lat,
 
           longitude:
-            lng
+            lng,
+
+          gpsAddress
         },
 
         ip_address:
@@ -1331,16 +1780,13 @@ export class ComplaintService {
         complaint:
           existingComplaint,
 
-        merged: true,
+        merged:
+          true,
 
         similarity:
           duplicateResult.similarity
       };
     }
-
-    // =======================================================
-    // NEW COMPLAINT
-    // =======================================================
 
     const trackingNumber =
       `CC-${new Date().getFullYear()}-${Math.floor(
@@ -1357,49 +1803,53 @@ export class ComplaintService {
             .toLowerCase()
       );
 
-    // =======================================================
-    // HUMAN READABLE LOCATION
-    // =======================================================
+    const customLocation =
+      data.customLocation?.trim() || '';
+
+    const aiLocation =
+      data.analysis.location?.trim() || '';
+
+    const hasGpsAddress =
+      typeof gpsAddress === 'string' &&
+      gpsAddress.trim().length > 0;
 
     let complaintLocation =
-      data.customLocation?.trim() ||
-      data.analysis.location?.trim() ||
-      '';
+      hasGpsAddress
+        ? gpsAddress!.trim()
+        : customLocation ||
+          aiLocation ||
+          'Not specified';
 
-    const locationIsMissing =
-      !complaintLocation ||
-      complaintLocation.toLowerCase() ===
-        'not specified';
+    if (hasGpsAddress) {
 
-    let gpsAddress:
-      string | null = null;
-
-    if (
-      locationIsMissing &&
-      lat !== null &&
-      lng !== null
-    ) {
-
-      gpsAddress =
-        await this.reverseGeocode(
-          lat,
-          lng
-        );
-
-      if (gpsAddress) {
-        complaintLocation =
-          gpsAddress;
-      }
-    }
-
-    if (!complaintLocation) {
       complaintLocation =
-        'Not specified';
+        gpsAddress!.trim();
     }
 
-    // =======================================================
-    // CREATE RECORD
-    // =======================================================
+    console.log(
+      '[ComplaintService] Final complaint location:',
+      {
+        complaintLocation,
+        gpsAddress,
+        customLocation,
+        aiLocation
+      }
+    );
+
+    const slaHours =
+      this.getSlaHours(
+        data.analysis.priority,
+        data.analysis.estimatedResolution
+      );
+
+    const slaDeadline =
+      new Date(
+        Date.now() +
+        slaHours *
+        60 *
+        60 *
+        1000
+      ).toISOString();
 
     const newRecord:
       ComplaintRecord = {
@@ -1490,6 +1940,21 @@ export class ComplaintService {
       estimated_resolution:
         data.analysis.estimatedResolution,
 
+      sla_hours:
+        slaHours,
+
+      sla_deadline:
+        slaDeadline,
+
+      sla_status:
+        'ON_TIME',
+
+      sla_breached:
+        false,
+
+      sla_breached_at:
+        null,
+
       affected_citizens_count:
         1,
 
@@ -1517,10 +1982,6 @@ export class ComplaintService {
       newRecord
     );
 
-    // =======================================================
-    // LOG
-    // =======================================================
-
     store.logs.unshift({
       id:
         `log-${Date.now()}`,
@@ -1541,14 +2002,26 @@ export class ComplaintService {
         priority:
           newRecord.priority,
 
+        department:
+          newRecord.department_name,
+
         location:
           newRecord.location,
+
+        gpsAddress:
+          newRecord.gps_address,
 
         latitude:
           lat,
 
         longitude:
-          lng
+          lng,
+
+        slaHours:
+          newRecord.sla_hours,
+
+        slaDeadline:
+          newRecord.sla_deadline
       },
 
       ip_address:
@@ -1562,7 +2035,8 @@ export class ComplaintService {
       complaint:
         newRecord,
 
-      merged: false,
+      merged:
+        false,
 
       similarity:
         0
@@ -1585,10 +2059,11 @@ export class ComplaintService {
     }
   ) {
 
+    this.checkAndProcessSlaBreaches();
+
     let result =
       [...store.complaints];
 
-    // Citizen
     if (
       filters.citizenId
     ) {
@@ -1604,7 +2079,6 @@ export class ComplaintService {
         );
     }
 
-    // Officer department
     if (
       filters.officerDepartmentId
     ) {
@@ -1617,7 +2091,6 @@ export class ComplaintService {
         );
     }
 
-    // Category
     if (
       filters.category &&
       filters.category !== 'All'
@@ -1633,7 +2106,6 @@ export class ComplaintService {
         );
     }
 
-    // Priority
     if (
       filters.priority &&
       filters.priority !== 'All'
@@ -1649,7 +2121,6 @@ export class ComplaintService {
         );
     }
 
-    // Department
     if (
       filters.department &&
       filters.department !== 'All'
@@ -1667,7 +2138,6 @@ export class ComplaintService {
         );
     }
 
-    // Status
     if (
       filters.status &&
       filters.status !== 'All'
@@ -1683,7 +2153,6 @@ export class ComplaintService {
         );
     }
 
-    // Search
     if (
       filters.search
     ) {
@@ -1722,6 +2191,8 @@ export class ComplaintService {
   static async getComplaintById(
     id: string
   ) {
+
+    this.checkAndProcessSlaBreaches();
 
     const complaint =
       store.complaints.find(
@@ -1790,6 +2261,40 @@ export class ComplaintService {
         'Department Officer';
     }
 
+    if (
+      status === 'Resolved' ||
+      status === 'Rejected'
+    ) {
+
+      complaint.sla_status =
+        'ON_TIME';
+    } else {
+
+      complaint.sla_status =
+        this.calculateSlaStatus(
+          complaint
+        );
+
+      if (
+        complaint.sla_status ===
+        'BREACHED'
+      ) {
+
+        if (!complaint.sla_breached) {
+
+          complaint.sla_breached =
+            true;
+
+          complaint.sla_breached_at =
+            new Date().toISOString();
+
+          this.createAdminSlaNotification(
+            complaint
+          );
+        }
+      }
+    }
+
     store.logs.unshift({
       id:
         `log-${Date.now()}`,
@@ -1806,7 +2311,13 @@ export class ComplaintService {
           complaint.tracking_number,
 
         newStatus:
-          status
+          status,
+
+        slaStatus:
+          complaint.sla_status,
+
+        slaDeadline:
+          complaint.sla_deadline
       },
 
       ip_address:
@@ -1872,13 +2383,51 @@ export class ComplaintService {
 
     return newNote;
   }
-  
+
+  // =========================================================
+  // ADMIN NOTIFICATIONS
+  // =========================================================
+
+  static async getAdminNotifications() {
+
+    this.checkAndProcessSlaBreaches();
+
+    return store.notifications
+      .filter(
+        (notification) =>
+          notification.user_id ===
+          'usr-admin-1'
+      );
+  }
+
+  static async markNotificationRead(
+    notificationId: string
+  ) {
+
+    const notification =
+      store.notifications.find(
+        (item) =>
+          item.id ===
+          notificationId
+      );
+
+    if (!notification) {
+      return null;
+    }
+
+    notification.is_read =
+      true;
+
+    return notification;
+  }
 
   // =========================================================
   // ANALYTICS
   // =========================================================
 
   static async getAnalytics() {
+
+    this.checkAndProcessSlaBreaches();
 
     const total =
       store.complaints.length;
@@ -1910,6 +2459,44 @@ export class ComplaintService {
           complaint.status === 'Pending' ||
           complaint.status === 'In Progress'
       ).length;
+
+    const slaBreached =
+      store.complaints.filter(
+        (complaint) =>
+          complaint.sla_status ===
+          'BREACHED'
+      ).length;
+
+    const slaAtRisk =
+      store.complaints.filter(
+        (complaint) =>
+          complaint.sla_status ===
+          'AT_RISK'
+      ).length;
+
+    const slaCompleted =
+      store.complaints.filter(
+        (complaint) =>
+          (
+            complaint.status ===
+            'Resolved'
+          ) &&
+          complaint.sla_breached !==
+            true
+      ).length;
+
+    const slaCompliancePercent =
+      resolved > 0
+        ? Number(
+            (
+              (
+                slaCompleted /
+                resolved
+              ) *
+              100
+            ).toFixed(1)
+          )
+        : 100;
 
     const totalAffectedCitizens =
       store.complaints.reduce(
@@ -1992,13 +2579,33 @@ export class ComplaintService {
 
     return {
       overview: {
-        totalComplaints: total,
-        emergencyComplaints: emergency,
-        resolvedComplaints: resolved,
-        pendingComplaints: pending,
+        totalComplaints:
+          total,
+
+        emergencyComplaints:
+          emergency,
+
+        resolvedComplaints:
+          resolved,
+
+        pendingComplaints:
+          pending,
+
         totalAffectedCitizens,
-        avgResolutionHours: 3.4,
-        duplicateReductionPercent: 48.5
+
+        avgResolutionHours:
+          3.4,
+
+        duplicateReductionPercent:
+          48.5,
+
+        slaBreachedComplaints:
+          slaBreached,
+
+        slaAtRiskComplaints:
+          slaAtRisk,
+
+        slaCompliancePercent
       },
 
       priorityDistribution,

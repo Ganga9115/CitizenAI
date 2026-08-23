@@ -38,7 +38,11 @@ import {
   CheckCircle2,
   Star,
   Eye,
-  User
+  User,
+  Filter,
+  ChevronDown,
+  ArrowUpDown,
+  X
 } from 'lucide-react';
 
 export const CitizenDashboard: React.FC =
@@ -50,6 +54,12 @@ export const CitizenDashboard: React.FC =
 
     const { user } =
       useAuth();
+
+    const navigate =
+      useNavigate();
+
+    const { showToast } =
+      useNotification();
 
     // =====================================================
     // STATE
@@ -65,28 +75,50 @@ export const CitizenDashboard: React.FC =
       setLoading
     ] = useState(true);
 
+    // =====================================================
+    // FILTER STATE
+    // =====================================================
+
     const [
       search,
       setSearch
     ] = useState('');
 
     const [
+      categoryFilter,
+      setCategoryFilter
+    ] = useState('All');
+
+    const [
+      departmentFilter,
+      setDepartmentFilter
+    ] = useState('All');
+
+    const [
+      priorityFilter,
+      setPriorityFilter
+    ] = useState('All');
+
+    const [
       statusFilter,
       setStatusFilter
     ] = useState('All');
 
-    const { showToast } =
-      useNotification();
-
-    const navigate =
-      useNavigate();
+    const [
+      sortBy,
+      setSortBy
+    ] = useState(
+      'newest'
+    );
 
     // =====================================================
     // FETCH COMPLAINTS
     // =====================================================
 
     useEffect(() => {
+
       fetchComplaints();
+
     }, []);
 
     const fetchComplaints =
@@ -132,42 +164,268 @@ export const CitizenDashboard: React.FC =
       };
 
     // =====================================================
-    // FILTER
+    // UNIQUE FILTER OPTIONS
+    // =====================================================
+
+    const categories =
+      Array.from(
+        new Set(
+          complaints
+            .map(
+              (complaint) =>
+                complaint.category
+            )
+            .filter(Boolean)
+        )
+      ).sort();
+
+    const departments =
+      Array.from(
+        new Set(
+          complaints
+            .map(
+              (complaint) =>
+                complaint.department_name
+            )
+            .filter(Boolean)
+        )
+      ).sort();
+
+    // =====================================================
+    // PRIORITY ORDER
+    // =====================================================
+
+    const priorityRank:
+      Record<string, number> = {
+        Emergency: 4,
+        High: 3,
+        Medium: 2,
+        Low: 1
+      };
+
+    // =====================================================
+    // FILTER + SORT
     // =====================================================
 
     const filtered =
-      complaints.filter(
-        (complaint) => {
+      complaints
+        .filter(
+          (complaint) => {
 
-          const query =
-            search
-              .trim()
-              .toLowerCase();
+            const query =
+              search
+                .trim()
+                .toLowerCase();
 
-          const matchesSearch =
-            complaint.tracking_number
-              .toLowerCase()
-              .includes(query) ||
+            // ------------------------------------------------
+            // SEARCH
+            // ------------------------------------------------
 
-            complaint.summary
-              .toLowerCase()
-              .includes(query) ||
+            const matchesSearch =
+              !query ||
+              complaint.tracking_number
+                .toLowerCase()
+                .includes(query) ||
 
-            complaint.category
-              .toLowerCase()
-              .includes(query);
+              complaint.summary
+                .toLowerCase()
+                .includes(query) ||
 
-          const matchesStatus =
-            statusFilter === 'All' ||
-            complaint.status ===
-              statusFilter;
+              complaint.category
+                .toLowerCase()
+                .includes(query) ||
 
-          return (
-            matchesSearch &&
-            matchesStatus
-          );
-        }
-      );
+              (
+                complaint.department_name ||
+                ''
+              )
+                .toLowerCase()
+                .includes(query) ||
+
+              (
+                complaint.location ||
+                ''
+              )
+                .toLowerCase()
+                .includes(query);
+
+            // ------------------------------------------------
+            // CATEGORY
+            // ------------------------------------------------
+
+            const matchesCategory =
+              categoryFilter === 'All' ||
+              complaint.category ===
+                categoryFilter;
+
+            // ------------------------------------------------
+            // DEPARTMENT
+            // ------------------------------------------------
+
+            const matchesDepartment =
+              departmentFilter === 'All' ||
+              complaint.department_name ===
+                departmentFilter;
+
+            // ------------------------------------------------
+            // PRIORITY
+            // ------------------------------------------------
+
+            const matchesPriority =
+              priorityFilter === 'All' ||
+              complaint.priority ===
+                priorityFilter;
+
+            // ------------------------------------------------
+            // STATUS
+            // ------------------------------------------------
+
+            const matchesStatus =
+              statusFilter === 'All' ||
+              complaint.status ===
+                statusFilter;
+
+            return (
+              matchesSearch &&
+              matchesCategory &&
+              matchesDepartment &&
+              matchesPriority &&
+              matchesStatus
+            );
+          }
+        )
+        .sort(
+          (a, b) => {
+
+            // =================================================
+            // NEWEST
+            // =================================================
+
+            if (
+              sortBy === 'newest'
+            ) {
+
+              return (
+                new Date(
+                  b.created_at
+                ).getTime() -
+                new Date(
+                  a.created_at
+                ).getTime()
+              );
+            }
+
+            // =================================================
+            // OLDEST
+            // =================================================
+
+            if (
+              sortBy === 'oldest'
+            ) {
+
+              return (
+                new Date(
+                  a.created_at
+                ).getTime() -
+                new Date(
+                  b.created_at
+                ).getTime()
+              );
+            }
+
+            // =================================================
+            // HIGHEST PRIORITY
+            // =================================================
+
+            if (
+              sortBy === 'highestPriority'
+            ) {
+
+              return (
+                (
+                  priorityRank[
+                    b.priority
+                  ] || 0
+                ) -
+                (
+                  priorityRank[
+                    a.priority
+                  ] || 0
+                )
+              );
+            }
+
+            // =================================================
+            // LOWEST PRIORITY
+            // =================================================
+
+            if (
+              sortBy === 'lowestPriority'
+            ) {
+
+              return (
+                (
+                  priorityRank[
+                    a.priority
+                  ] || 0
+                ) -
+                (
+                  priorityRank[
+                    b.priority
+                  ] || 0
+                )
+              );
+            }
+
+            // =================================================
+            // RECENTLY UPDATED
+            // =================================================
+
+            if (
+              sortBy === 'recentlyUpdated'
+            ) {
+
+              return (
+                new Date(
+                  b.updated_at
+                ).getTime() -
+                new Date(
+                  a.updated_at
+                ).getTime()
+              );
+            }
+
+            return 0;
+          }
+        );
+
+    // =====================================================
+    // ACTIVE FILTER COUNT
+    // =====================================================
+
+    const activeFilterCount =
+      [
+        categoryFilter !== 'All',
+        departmentFilter !== 'All',
+        priorityFilter !== 'All',
+        statusFilter !== 'All',
+        Boolean(search.trim())
+      ].filter(Boolean).length;
+
+    // =====================================================
+    // CLEAR FILTERS
+    // =====================================================
+
+    const clearFilters =
+      () => {
+
+        setSearch('');
+        setCategoryFilter('All');
+        setDepartmentFilter('All');
+        setPriorityFilter('All');
+        setStatusFilter('All');
+        setSortBy('newest');
+      };
 
     // =====================================================
     // STATUS STYLE
@@ -186,9 +444,41 @@ export const CitizenDashboard: React.FC =
           case 'In Progress':
             return 'bg-amber-100 text-amber-700';
 
+          case 'Assigned':
+            return 'bg-purple-100 text-purple-700';
+
+          case 'Rejected':
+            return 'bg-red-100 text-red-700';
+
           case 'Pending':
           default:
             return 'bg-blue-100 text-blue-600';
+        }
+      };
+
+    // =====================================================
+    // PRIORITY STYLE
+    // =====================================================
+
+    const getPriorityStyle =
+      (
+        priority: string
+      ) => {
+
+        switch (priority) {
+
+          case 'Emergency':
+            return 'bg-red-100 text-red-700';
+
+          case 'High':
+            return 'bg-orange-100 text-orange-700';
+
+          case 'Medium':
+            return 'bg-yellow-100 text-yellow-700';
+
+          case 'Low':
+          default:
+            return 'bg-blue-100 text-blue-700';
         }
       };
 
@@ -231,40 +521,55 @@ export const CitizenDashboard: React.FC =
                 to="/citizen/dashboard"
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/15 text-white font-semibold text-xs"
               >
+
                 <LayoutDashboard className="w-4 h-4" />
+
                 My Dashboard
+
               </Link>
 
               <Link
                 to="/citizen/raise"
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs"
               >
+
                 <PlusCircle className="w-4 h-4" />
+
                 Raise New Complaint
+
               </Link>
 
               <Link
                 to="/citizen/dashboard"
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs"
               >
+
                 <History className="w-4 h-4" />
+
                 Complaint History
+
               </Link>
 
               <Link
                 to="/notifications"
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs"
               >
+
                 <Bell className="w-4 h-4" />
+
                 Notifications
+
               </Link>
 
               <Link
                 to="/profile"
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-semibold text-xs"
               >
+
                 <Settings className="w-4 h-4" />
+
                 Account Settings
+
               </Link>
 
             </nav>
@@ -272,7 +577,7 @@ export const CitizenDashboard: React.FC =
           </div>
 
           {/* =================================================
-              DYNAMIC CITIZEN PROFILE
+              CITIZEN PROFILE
               ================================================= */}
 
           <Link
@@ -335,7 +640,7 @@ export const CitizenDashboard: React.FC =
                       e.target.value
                     )
                   }
-                  placeholder="Search my complaints by ID, category..."
+                  placeholder="Search my complaints..."
                   className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#F3F4F6] text-xs focus:outline-none focus:ring-1 focus:ring-[#5E4075]"
                 />
 
@@ -367,6 +672,7 @@ export const CitizenDashboard: React.FC =
                 <h2 className="text-2xl sm:text-3xl font-extrabold">
 
                   Welcome,{' '}
+
                   {user?.fullName ||
                     'Citizen'}
 
@@ -434,8 +740,10 @@ export const CitizenDashboard: React.FC =
                     {
                       complaints.filter(
                         (c) =>
-                          c.status === 'In Progress' ||
-                          c.status === 'Pending'
+                          c.status ===
+                            'In Progress' ||
+                          c.status ===
+                            'Pending'
                       ).length
                     }
 
@@ -464,7 +772,8 @@ export const CitizenDashboard: React.FC =
                     {
                       complaints.filter(
                         (c) =>
-                          c.status === 'Resolved'
+                          c.status ===
+                          'Resolved'
                       ).length
                     }
 
@@ -519,71 +828,326 @@ export const CitizenDashboard: React.FC =
 
             <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
 
-              <div className="p-5 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              {/* =================================================
+                  FILTER HEADER
+                  ================================================= */}
 
-                <h3 className="text-base font-extrabold">
-                  My Raised Complaints
-                </h3>
+              <div className="p-5 border-b border-[#E5E7EB] space-y-4">
 
-                <div className="flex items-center gap-2 overflow-x-auto">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
 
-                  {[
-                    'All',
-                    'Pending',
-                    'In Progress',
-                    'Resolved'
-                  ].map(
-                    (status) => (
+                  <div>
+
+                    <div className="flex items-center gap-2">
+
+                      <h3 className="text-base font-extrabold">
+                        My Raised Complaints
+                      </h3>
+
+                      {activeFilterCount > 0 && (
+
+                        <span className="px-2 py-0.5 rounded-full bg-[#5E4075] text-white text-[10px] font-bold">
+
+                          {activeFilterCount}
+                          {' '}
+                          filter
+                          {activeFilterCount > 1
+                            ? 's'
+                            : ''}
+
+                        </span>
+
+                      )}
+
+                    </div>
+
+                    <p className="text-[11px] text-[#6B7280] mt-1">
+
+                      Showing {filtered.length} of {complaints.length} complaints
+
+                    </p>
+
+                  </div>
+
+                  <div className="flex items-center gap-2">
+
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#6B7280]">
+
+                      <ArrowUpDown className="w-3.5 h-3.5" />
+
+                      Sort
+
+                    </div>
+
+                    <select
+                      value={sortBy}
+                      onChange={(e) =>
+                        setSortBy(
+                          e.target.value
+                        )
+                      }
+                      className="px-3 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-semibold text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#5E4075]/20"
+                    >
+
+                      <option value="newest">
+                        Newest First
+                      </option>
+
+                      <option value="oldest">
+                        Oldest First
+                      </option>
+
+                      <option value="highestPriority">
+                        Highest Priority
+                      </option>
+
+                      <option value="lowestPriority">
+                        Lowest Priority
+                      </option>
+
+                      <option value="recentlyUpdated">
+                        Recently Updated
+                      </option>
+
+                    </select>
+
+                    {activeFilterCount > 0 && (
 
                       <button
-                        key={status}
                         type="button"
-                        onClick={() =>
-                          setStatusFilter(
-                            status
-                          )
-                        }
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
-                          statusFilter ===
-                          status
-                            ? 'bg-[#5E4075] text-white'
-                            : 'bg-white text-[#6B7280] border border-[#E5E7EB]'
-                        }`}
+                        onClick={clearFilters}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold hover:bg-red-100"
                       >
-                        {status}
+
+                        <X className="w-3.5 h-3.5" />
+
+                        Clear
+
                       </button>
 
-                    )
-                  )}
+                    )}
+
+                  </div>
 
                 </div>
 
-              </div>
+                {/* =================================================
+                    FILTER CONTROLS
+                    ================================================= */}
+
+                <div className="flex items-center gap-2 text-[11px] font-bold text-[#6B7280]">
+
+                  <Filter className="w-4 h-4 text-[#5E4075]" />
+
+                  Filter complaints
+
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+
+                  {/* CATEGORY */}
+
+                  <div className="relative">
+
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) =>
+                        setCategoryFilter(
+                          e.target.value
+                        )
+                      }
+                      className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] text-xs font-semibold text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#5E4075]/20"
+                    >
+
+                      <option value="All">
+                        All Categories
+                      </option>
+
+                      {categories.map(
+                        (category) => (
+
+                          <option
+                            key={category}
+                            value={category}
+                          >
+                            {category}
+                          </option>
+
+                        )
+                      )}
+
+                    </select>
+
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 pointer-events-none" />
+
+                  </div>
+
+                  {/* DEPARTMENT */}
+
+                  <div className="relative">
+
+                    <select
+                      value={departmentFilter}
+                      onChange={(e) =>
+                        setDepartmentFilter(
+                          e.target.value
+                        )
+                      }
+                      className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] text-xs font-semibold text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#5E4075]/20"
+                    >
+
+                      <option value="All">
+                        All Departments
+                      </option>
+
+                      {departments.map(
+                        (department) => (
+
+                          <option
+                            key={department}
+                            value={department}
+                          >
+                            {department}
+                          </option>
+
+                        )
+                      )}
+
+                    </select>
+
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 pointer-events-none" />
+
+                  </div>
+
+                  {/* PRIORITY */}
+
+                  <div className="relative">
+
+                    <select
+                      value={priorityFilter}
+                      onChange={(e) =>
+                        setPriorityFilter(
+                          e.target.value
+                        )
+                      }
+                      className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] text-xs font-semibold text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#5E4075]/20"
+                    >
+
+                      <option value="All">
+                        All Priorities
+                      </option>
+
+                      <option value="Emergency">
+                        Emergency
+                      </option>
+
+                      <option value="High">
+                        High
+                      </option>
+
+                      <option value="Medium">
+                        Medium
+                      </option>
+
+                      <option value="Low">
+                        Low
+                      </option>
+
+                    </select>
+
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 pointer-events-none" />
+
+                  </div>
+
+                  {/* STATUS */}
+
+                  <div className="relative">
+
+                    <select
+                      value={statusFilter}
+                      onChange={(e) =>
+                        setStatusFilter(
+                          e.target.value
+                        )
+                      }
+                      className="w-full appearance-none px-3.5 py-2.5 pr-9 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] text-xs font-semibold text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#5E4075]/20"
+                    >
+
+                      <option value="All">
+                        All Statuses
+                      </option>
+
+                      <option value="Pending">
+                        Pending
+                      </option>
+
+                      <option value="Assigned">
+                        Assigned
+                      </option>
+
+                      <option value="In Progress">
+                        In Progress
+                      </option>
+
+                      <option value="Resolved">
+                        Resolved
+                      </option>
+
+                      <option value="Rejected">
+                        Rejected
+                      </option>
+
+                    </select>
+
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 pointer-events-none" />
+
+                  </div>
+
+                </div>
+
+                </div>
+
+
+              
+              {/* =================================================
+                  TABLE
+                  ================================================= */}
 
               {loading ? (
 
                 <div className="p-12 text-center text-[#6B7280] text-sm">
+
                   Loading your complaints...
+
                 </div>
 
               ) : filtered.length === 0 ? (
 
                 <div className="p-12 text-center text-[#6B7280] text-sm space-y-3">
 
-                  <p>
-                    No complaints found.
+                  <div className="w-12 h-12 mx-auto rounded-2xl bg-[#F3F4F6] flex items-center justify-center">
+
+                    <Search className="w-5 h-5 text-gray-400" />
+
+                  </div>
+
+                  <p className="font-semibold">
+
+                    No complaints match your filters.
+
                   </p>
 
-                  <Link
-                    to="/citizen/raise"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#5E4075] text-white font-bold text-xs"
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#E5E7EB] bg-white text-[#5E4075] font-bold text-xs"
                   >
 
-                    <Plus className="w-4 h-4" />
+                    <X className="w-4 h-4" />
 
-                    Raise Your First Complaint
+                    Clear Filters
 
-                  </Link>
+                  </button>
 
                 </div>
 
@@ -611,6 +1175,10 @@ export const CitizenDashboard: React.FC =
 
                         <th className="py-3.5 px-6">
                           Department
+                        </th>
+
+                        <th className="py-3.5 px-6">
+                          Priority
                         </th>
 
                         <th className="py-3.5 px-6">
@@ -646,28 +1214,53 @@ export const CitizenDashboard: React.FC =
                             className="hover:bg-gray-50 cursor-pointer"
                           >
 
-                            <td className="py-4 px-6 font-mono font-bold text-[#5E4075]">
+                            <td className="py-4 px-6 font-mono font-bold text-[#5E4075] whitespace-nowrap">
 
                               #{complaint.tracking_number}
 
                             </td>
 
-                            <td className="py-4 px-6 font-semibold max-w-xs truncate">
+                            <td className="py-4 px-6 font-semibold max-w-xs">
 
-                              {complaint.summary}
+                              <div
+                                className="truncate max-w-xs"
+                                title={
+                                  complaint.summary
+                                }
+                              >
+
+                                {
+                                  complaint.summary
+                                }
+
+                              </div>
 
                             </td>
 
-                            <td className="py-4 px-6 text-[#6B7280]">
+                            <td className="py-4 px-6 text-[#6B7280] whitespace-nowrap">
 
                               {complaint.category}
 
                             </td>
 
-                            <td className="py-4 px-6 text-[#6B7280]">
+                            <td className="py-4 px-6 text-[#6B7280] whitespace-nowrap">
 
                               {complaint.department_name ||
                                 'Unassigned'}
+
+                            </td>
+
+                            <td className="py-4 px-6">
+
+                              <span
+                                className={`px-2.5 py-1 rounded-md text-[11px] font-bold inline-block ${getPriorityStyle(
+                                  complaint.priority
+                                )}`}
+                              >
+
+                                {complaint.priority}
+
+                              </span>
 
                             </td>
 
@@ -678,7 +1271,9 @@ export const CitizenDashboard: React.FC =
                                   complaint.status
                                 )}`}
                               >
+
                                 {complaint.status}
+
                               </span>
 
                             </td>
